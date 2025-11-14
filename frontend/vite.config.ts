@@ -13,6 +13,10 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 10000  // Render's default port
+    port: 10000,
+	allowedHosts: [
+      'bgsage.onrender.com',
+      '.onrender.com'  // Allows all Render subdomains
+    ]
   }
 })
