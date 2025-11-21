@@ -13,10 +13,6 @@ books = [
 @app.route('/books', methods=['GET'])
 def get_books():
     return jsonify(books)
-# Get all books
-@app.route('/books', methods=['GET'])
-def get_books():
-    return jsonify(books)
 # Get a single book by ID
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
