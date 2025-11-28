@@ -13,7 +13,7 @@ books = [
 @app.route('/askBGSage', methods=['POST'])
 def get_books():
     print(request.json)
-    return jsonify(request.json)
+    return jsonify(request.json) , 200
 # Get a single book by ID
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
