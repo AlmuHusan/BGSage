@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
-
+import os
 app = Flask(__name__)
-
+value = os.getenv("llmAPIKey")
 # Sample data
 books = [
     {"id": 1, "title": "Concept of Physics", "author": "H.C Verma"},
@@ -10,9 +10,10 @@ books = [
 ]
 
 # Get all books
-@app.route('/books', methods=['GET'])
+@app.route('/askBGSage', methods=['POST'])
 def get_books():
-    return jsonify(books)
+    print(request.json)
+    return jsonify(request.json)
 # Get a single book by ID
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
