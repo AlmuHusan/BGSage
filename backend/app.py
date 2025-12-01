@@ -1,6 +1,14 @@
 from flask import Flask, jsonify, request
 import os
 app = Flask(__name__)
+from groq import Groq
+
+
+client = Groq(
+
+    api_key=os.environ.get("GROQ_API_KEY"),
+
+)
 value = os.getenv("llmAPIKey")
 # Sample data
 books = [
@@ -11,10 +19,22 @@ books = [
 
 # Get all books
 @app.route('/askBGSage', methods=['POST'])
-def get_books():
+def askBGSage():
     print(request.json)
+    query=request.json["query"]
     print("DING")
-    return jsonify(request.json) , 200
+    chat_completion = client.chat.completions.create(
+
+        messages=[
+            {
+                "role": "user",
+                "content": query,
+            }
+        ],
+        model="llama-3.3-70b-versatile",
+    )
+    print(chat_completion.choices)
+    return jsonify(chat_completion.choices[0].message.content) , 200
 # Get a single book by ID
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
