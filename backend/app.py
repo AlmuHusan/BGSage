@@ -18,7 +18,7 @@ books = [
 @app.route('/askBGSage', methods=['POST'])
 def askBGSage():
     print(request.json)
-    query=request.json["query"]
+    query=request.json.query
     print("DING")
     chat_completion = client.chat.completions.create(
 
