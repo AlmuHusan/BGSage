@@ -5,11 +5,8 @@ from groq import Groq
 
 
 client = Groq(
-
-    api_key=os.environ.get("GROQ_API_KEY"),
-
+    api_key=os.environ.get("llmAPIKey"),
 )
-value = os.getenv("llmAPIKey")
 # Sample data
 books = [
     {"id": 1, "title": "Concept of Physics", "author": "H.C Verma"},
