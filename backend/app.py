@@ -19,7 +19,7 @@ books = [
 def askBGSage():
     try:
         print(request.json)
-        query=request.json.query
+        query=request.json["query"]
         print("DING")
         chat_completion = client.chat.completions.create(
 
