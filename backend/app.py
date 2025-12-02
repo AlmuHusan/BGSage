@@ -17,21 +17,26 @@ books = [
 # Get all books
 @app.route('/askBGSage', methods=['POST'])
 def askBGSage():
-    print(request.json)
-    query=request.json.query
-    print("DING")
-    chat_completion = client.chat.completions.create(
+    try:
+        print(request.json)
+        query=request.json.query
+        print("DING")
+        chat_completion = client.chat.completions.create(
 
-        messages=[
-            {
-                "role": "user",
-                "content": query,
-            }
-        ],
-        model="llama-3.3-70b-versatile",
-    )
-    print(chat_completion.choices)
-    return jsonify(chat_completion.choices[0].message.content) , 200
+            messages=[
+                {
+                    "role": "user",
+                    "content": query,
+                }
+            ],
+            model="llama-3.3-70b-versatile",
+        )
+        print(chat_completion.choices)
+        return jsonify(chat_completion.choices[0].message.content) , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 # Get a single book by ID
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
