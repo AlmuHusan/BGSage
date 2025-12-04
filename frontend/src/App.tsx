@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'other';
+  sender: 'user' | 'system';
   time: string;
   isVoice?: boolean;
   isFile?: boolean;
@@ -42,9 +42,9 @@ export default function ChatApp() {
       time: "10:32 AM",
       unread: 0,
       messages: [
-        { id: 1, text: "Hey! How are you?", sender: "other", time: "10:30 AM" },
+        { id: 1, text: "Hey! How are you?", sender: "system", time: "10:30 AM" },
         { id: 2, text: "I'm doing great, thanks! How about you?", sender: "user", time: "10:31 AM" },
-        { id: 3, text: "Pretty good! Working on some projects.", sender: "other", time: "10:32 AM" },
+        { id: 3, text: "Pretty good! Working on some projects.", sender: "system", time: "10:32 AM" },
       ]
     }
   ]);
@@ -85,7 +85,7 @@ export default function ChatApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSend = (): void => {
+  const  handleSend = async () => {
     if (input.trim() && currentChat) {
       const newMessage: Message = {
         id: currentChat.messages.length + 1,
@@ -104,7 +104,41 @@ export default function ChatApp() {
             }
           : chat
       ));
-      setInput("");
+      
+      await fetch('https://bgsageapi.onrender.com/askBGSage', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: input,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+        setInput("");
+        const responseMessage: Message = {
+            id: currentChat.messages.length + 1,
+            text: data,
+            sender: "system",
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          };
+        setChats(chats.map(chat => 
+        chat.id === activeChat 
+          ? { 
+              ...chat, 
+              messages: [...chat.messages, responseMessage],
+              lastMessage: data,
+              time: "Just now"
+            }
+          : chat
+      ));
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+      
     }
   };
 
