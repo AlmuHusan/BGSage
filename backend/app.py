@@ -1,9 +1,12 @@
 from flask import Flask, jsonify, request
 import os
-app = Flask(__name__)
+from flask_cors import CORS
+
 from groq import Groq
 
-
+app = Flask(__name__)
+CORS(app)
+CORS(app, origins=['https://bgsage.onrender.com'])
 client = Groq(
     api_key=os.environ.get("llmAPIKey"),
 )
