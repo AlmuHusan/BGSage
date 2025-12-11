@@ -104,7 +104,7 @@ export default function ChatApp() {
             }
           : chat
       ));
-      
+      setInput("");
       await fetch('https://bgsageapi.onrender.com/askBGSage', {
       method: 'POST',
       body: JSON.stringify({
@@ -117,7 +117,7 @@ export default function ChatApp() {
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        setInput("");
+        
         const responseMessage: Message = {
             id: currentChat.messages.length + 1,
             text: data,
@@ -128,7 +128,7 @@ export default function ChatApp() {
         chat.id === activeChat 
           ? { 
               ...chat, 
-              messages: [...chat.messages, responseMessage],
+              messages: [...chat.messages, newMessage,responseMessage],
               lastMessage: data,
               time: "Just now"
             }
