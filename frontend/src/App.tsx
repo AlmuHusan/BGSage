@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Plus, MessageSquare, Menu, X, Mic, Square, Upload, FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, Plus, MessageSquare, Menu, X, Mic, Square, Upload, FileText, Download, ChevronLeft, ChevronRight, Edit2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -41,11 +41,7 @@ export default function ChatApp() {
       lastMessage: "Pretty good! Working on some projects.",
       time: "10:32 AM",
       unread: 0,
-      messages: [
-        { id: 1, text: "Hey! How are you?", sender: "system", time: "10:30 AM" },
-        { id: 2, text: "I'm doing great, thanks! How about you?", sender: "user", time: "10:31 AM" },
-        { id: 3, text: "Pretty good! Working on some projects.", sender: "system", time: "10:32 AM" },
-      ]
+      messages: []
     }
   ]);
 
@@ -63,7 +59,8 @@ export default function ChatApp() {
     { id: 2, name: "Meeting_Notes.docx", size: "156 KB", uploadedAt: "Yesterday" },
     { id: 3, name: "Budget_2024.xlsx", size: "890 KB", uploadedAt: "Oct 15" },
   ]);
-
+  const [isEditingName, setIsEditingName] = useState<boolean>(false);
+  const [editedName, setEditedName] = useState<string>("");
   const currentChat = chats.find(chat => chat.id === activeChat);
 
   useEffect(() => {
@@ -238,7 +235,23 @@ export default function ChatApp() {
       ));
     }
   };
+const saveChatName = (): void => {
+    if (editedName.trim() && currentChat) {
+      setChats(chats.map(chat => 
+        chat.id === activeChat 
+          ? { ...chat, name: editedName.trim() }
+          : chat
+      ));
+      setIsEditingName(false);
+    }
+  };
 
+  const startEditingName = (): void => {
+    if (currentChat) {
+      setEditedName(currentChat.name);
+      setIsEditingName(true);
+    }
+  };
   return (
     <div className="flex h-screen bg-background relative overflow-hidden">
       {/* Mobile Overlay for Left Sidebar */}
@@ -322,9 +335,6 @@ export default function ChatApp() {
             >
               {leftSidebarExpanded ? (
                 <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarFallback>{chat.initials}</AvatarFallback>
-                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold truncate">{chat.name}</h3>
@@ -340,9 +350,6 @@ export default function ChatApp() {
                 </div>
               ) : (
                 <div className="flex justify-center relative">
-                  <Avatar>
-                    <AvatarFallback>{chat.initials}</AvatarFallback>
-                  </Avatar>
                   {chat.unread > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                       {chat.unread}
@@ -371,12 +378,55 @@ export default function ChatApp() {
                 >
                   <Menu size={18} />
                 </Button>
-                <Avatar>
-                  <AvatarFallback>{currentChat.initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="font-semibold text-lg">{currentChat.name}</h2>
-                  <p className="text-sm text-muted-foreground">Online</p>
+                <div className="flex-1 flex items-center gap-2">
+                  {isEditingName ? (
+                    <>
+                      <Input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        onKeyUp={(e) => {
+                          if (e.key === 'Enter') {
+                            saveChatName();
+                          }
+                        }}
+                        className="h-9 max-w-xs"
+                        autoFocus
+                      />
+                      <Button
+                        onClick={saveChatName}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9"
+                        title="Save name"
+                      >
+                        <Check size={18} />
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditingName(false)}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9"
+                        title="Cancel"
+                      >
+                        <X size={18} />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1">
+                        <h2 className="font-semibold text-lg">{currentChat.name}</h2>
+                      </div>
+                      <Button
+                        onClick={startEditingName}
+                        size="icon"
+                        variant="ghost"
+                        title="Edit chat name"
+                      >
+                        <Edit2 size={18} />
+                      </Button>
+                    </>
+                  )}
                 </div>
                 <Button
                   onClick={() => setShowRightSidebar(true)}
@@ -448,7 +498,7 @@ export default function ChatApp() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyUp={handleKeyPress}
                     placeholder="Type a message..."
                     className="flex-1"
                   />
@@ -500,8 +550,7 @@ export default function ChatApp() {
         <div className="p-4 border-b flex items-center justify-between">
           {rightSidebarExpanded ? (
             <>
-              <h2 className="text-lg font-semibold">Documents</h2>
-              <Button
+            <Button
                 onClick={() => {
                   setRightSidebarExpanded(false);
                   if (window.innerWidth < 768) {
@@ -514,14 +563,16 @@ export default function ChatApp() {
               >
                 <ChevronRight size={18} />
               </Button>
+              <h2 className="text-xl font-bold flex-1 text-center">Documents</h2>
+              
             </>
           ) : (
             <Button
               onClick={() => setRightSidebarExpanded(true)}
               size="icon"
               variant="ghost"
-              className="mx-auto"
               title="Expand Sidebar"
+              className="mx-auto"
             >
               <ChevronLeft size={18} />
             </Button>
