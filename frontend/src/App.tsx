@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Send, Plus, MessageSquare, Menu, X, Mic, Square, Upload, FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, Plus, MessageSquare, Menu, X, Mic, Square, Upload, FileText, Download, ChevronLeft, ChevronRight, Edit2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'other';
+  sender: 'user' | 'system';
   time: string;
   isVoice?: boolean;
   isFile?: boolean;
@@ -41,11 +40,7 @@ export default function ChatApp() {
       lastMessage: "Pretty good! Working on some projects.",
       time: "10:32 AM",
       unread: 0,
-      messages: [
-        { id: 1, text: "Hey! How are you?", sender: "other", time: "10:30 AM" },
-        { id: 2, text: "I'm doing great, thanks! How about you?", sender: "user", time: "10:31 AM" },
-        { id: 3, text: "Pretty good! Working on some projects.", sender: "other", time: "10:32 AM" },
-      ]
+      messages: []
     }
   ]);
 
@@ -63,7 +58,8 @@ export default function ChatApp() {
     { id: 2, name: "Meeting_Notes.docx", size: "156 KB", uploadedAt: "Yesterday" },
     { id: 3, name: "Budget_2024.xlsx", size: "890 KB", uploadedAt: "Oct 15" },
   ]);
-
+  const [isEditingName, setIsEditingName] = useState<boolean>(false);
+  const [editedName, setEditedName] = useState<string>("");
   const currentChat = chats.find(chat => chat.id === activeChat);
 
   useEffect(() => {
@@ -85,7 +81,7 @@ export default function ChatApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSend = (): void => {
+  const  handleSend = async () => {
     if (input.trim() && currentChat) {
       const newMessage: Message = {
         id: currentChat.messages.length + 1,
@@ -105,6 +101,40 @@ export default function ChatApp() {
           : chat
       ));
       setInput("");
+      await fetch('https://bgsageapi.onrender.com/askBGSage', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: input,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+        
+        const responseMessage: Message = {
+            id: currentChat.messages.length + 1,
+            text: data,
+            sender: "system",
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          };
+        setChats(chats.map(chat => 
+        chat.id === activeChat 
+          ? { 
+              ...chat, 
+              messages: [...chat.messages, newMessage,responseMessage],
+              lastMessage: data,
+              time: "Just now"
+            }
+          : chat
+      ));
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+      
     }
   };
 
@@ -129,7 +159,9 @@ export default function ChatApp() {
     setChats([newChat, ...chats]);
     setActiveChat(newChatId);
   };
-
+  const deleteDocument = (docId: number): void => {
+    setDocuments(documents.filter(doc => doc.id !== docId));
+  };
   const startRecording = (): void => {
     setIsRecording(true);
     setRecordingDuration(0);
@@ -204,7 +236,23 @@ export default function ChatApp() {
       ));
     }
   };
+const saveChatName = (): void => {
+    if (editedName.trim() && currentChat) {
+      setChats(chats.map(chat => 
+        chat.id === activeChat 
+          ? { ...chat, name: editedName.trim() }
+          : chat
+      ));
+      setIsEditingName(false);
+    }
+  };
 
+  const startEditingName = (): void => {
+    if (currentChat) {
+      setEditedName(currentChat.name);
+      setIsEditingName(true);
+    }
+  };
   return (
     <div className="flex h-screen bg-background relative overflow-hidden">
       {/* Mobile Overlay for Left Sidebar */}
@@ -288,9 +336,6 @@ export default function ChatApp() {
             >
               {leftSidebarExpanded ? (
                 <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarFallback>{chat.initials}</AvatarFallback>
-                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold truncate">{chat.name}</h3>
@@ -306,9 +351,6 @@ export default function ChatApp() {
                 </div>
               ) : (
                 <div className="flex justify-center relative">
-                  <Avatar>
-                    <AvatarFallback>{chat.initials}</AvatarFallback>
-                  </Avatar>
                   {chat.unread > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                       {chat.unread}
@@ -337,12 +379,55 @@ export default function ChatApp() {
                 >
                   <Menu size={18} />
                 </Button>
-                <Avatar>
-                  <AvatarFallback>{currentChat.initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="font-semibold text-lg">{currentChat.name}</h2>
-                  <p className="text-sm text-muted-foreground">Online</p>
+                <div className="flex-1 flex items-center gap-2">
+                  {isEditingName ? (
+                    <>
+                      <Input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        onKeyUp={(e) => {
+                          if (e.key === 'Enter') {
+                            saveChatName();
+                          }
+                        }}
+                        className="h-9 max-w-xs"
+                        autoFocus
+                      />
+                      <Button
+                        onClick={saveChatName}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9"
+                        title="Save name"
+                      >
+                        <Check size={18} />
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditingName(false)}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9"
+                        title="Cancel"
+                      >
+                        <X size={18} />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1">
+                        <h2 className="font-semibold text-lg">{currentChat.name}</h2>
+                      </div>
+                      <Button
+                        onClick={startEditingName}
+                        size="icon"
+                        variant="ghost"
+                        title="Edit chat name"
+                      >
+                        <Edit2 size={18} />
+                      </Button>
+                    </>
+                  )}
                 </div>
                 <Button
                   onClick={() => setShowRightSidebar(true)}
@@ -414,7 +499,7 @@ export default function ChatApp() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyUp={handleKeyPress}
                     placeholder="Type a message..."
                     className="flex-1"
                   />
@@ -466,8 +551,7 @@ export default function ChatApp() {
         <div className="p-4 border-b flex items-center justify-between">
           {rightSidebarExpanded ? (
             <>
-              <h2 className="text-lg font-semibold">Documents</h2>
-              <Button
+            <Button
                 onClick={() => {
                   setRightSidebarExpanded(false);
                   if (window.innerWidth < 768) {
@@ -480,14 +564,16 @@ export default function ChatApp() {
               >
                 <ChevronRight size={18} />
               </Button>
+              <h2 className="text-xl font-bold flex-1 text-center">Documents</h2>
+              
             </>
           ) : (
             <Button
               onClick={() => setRightSidebarExpanded(true)}
               size="icon"
               variant="ghost"
-              className="mx-auto"
               title="Expand Sidebar"
+              className="mx-auto"
             >
               <ChevronLeft size={18} />
             </Button>
@@ -496,6 +582,7 @@ export default function ChatApp() {
 
         {/* Documents List */}
         {rightSidebarExpanded && (
+          <>
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-3">
               {documents.length === 0 ? (
@@ -526,12 +613,38 @@ export default function ChatApp() {
                       >
                         <Download size={16} />
                       </Button>
+                      <Button
+                            onClick={() => deleteDocument(doc.id)}
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
+                            title="Delete document"
+                          >
+                            <X size={16} />
+                      </Button>
                     </div>
                   </div>
                 ))
               )}
             </div>
           </ScrollArea>
+           <div className="p-4 border-t">
+              <input
+                type="file"
+                id="sidebar-file-upload"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button
+                onClick={() => document.getElementById('sidebar-file-upload')?.click()}
+                className="w-full"
+                variant="default"
+              >
+                <Upload size={18} className="mr-2" />
+                Upload Document
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </div>
