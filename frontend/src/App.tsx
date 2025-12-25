@@ -580,6 +580,7 @@ const saveChatName = (): void => {
 
         {/* Documents List */}
         {rightSidebarExpanded && (
+          <>
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-3">
               {documents.length === 0 ? (
@@ -616,6 +617,23 @@ const saveChatName = (): void => {
               )}
             </div>
           </ScrollArea>
+           <div className="p-4 border-t">
+              <input
+                type="file"
+                id="sidebar-file-upload"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button
+                onClick={() => document.getElementById('sidebar-file-upload')?.click()}
+                className="w-full"
+                variant="default"
+              >
+                <Upload size={18} className="mr-2" />
+                Upload Document
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </div>
