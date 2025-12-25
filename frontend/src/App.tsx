@@ -159,7 +159,9 @@ export default function ChatApp() {
     setChats([newChat, ...chats]);
     setActiveChat(newChatId);
   };
-
+  const deleteDocument = (docId: number): void => {
+    setDocuments(documents.filter(doc => doc.id !== docId));
+  };
   const startRecording = (): void => {
     setIsRecording(true);
     setRecordingDuration(0);
@@ -610,6 +612,15 @@ const saveChatName = (): void => {
                         title="Download"
                       >
                         <Download size={16} />
+                      </Button>
+                      <Button
+                            onClick={() => deleteDocument(doc.id)}
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
+                            title="Delete document"
+                          >
+                            <X size={16} />
                       </Button>
                     </div>
                   </div>
