@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request
 import os
 from flask_cors import CORS
-
+from sentence_transformers import SentenceTransformer
 from groq import Groq
-
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 app = Flask(__name__)
 CORS(app)
 CORS(app, origins=['https://bgsage.onrender.com'])
@@ -47,11 +47,12 @@ def get_book(book_id):
     return jsonify(book) if book else (jsonify({"error": "Book not found"}), 404)
 
 # Add a new book
-@app.route('/books', methods=['POST'])
-def add_book():
-    new_book = request.json
-    books.append(new_book)
-    return jsonify(new_book), 201
+@app.route('/embed', methods=['POST'])
+def embedText():
+    query = request.json["query"]
+    embeddings = model.encode(query)
+    #books.append(new_book)
+    return jsonify(embeddings), 201
 
 # Update a book
 @app.route('/books/<int:book_id>', methods=['PUT'])
