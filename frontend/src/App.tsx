@@ -209,6 +209,7 @@ export default function ChatApp() {
     const file = e.target.files?.[0];
     console.log(e);
     console.log(file);
+    console.log(file?.arrayBuffer);
     if (file && currentChat) {
       const newDoc: Document = {
         id: documents.length + 1,
