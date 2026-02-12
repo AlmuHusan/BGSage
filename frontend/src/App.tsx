@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 interface Message {
   id: number;
   text: string;
@@ -205,11 +208,29 @@ export default function ChatApp() {
     setRecordingDuration(0);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     console.log(e);
     console.log(file);
-    console.log(file?.arrayBuffer);
+    const arrayBuffer = await file?.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pages=[]
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      pages.push(pageText);
+    }
+    console.log(pages)
+    await fetch('https://bgsageapi.onrender.com/insertRows', {
+      method: 'POST',
+      body: JSON.stringify({
+        pages: pages,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+      })
     if (file && currentChat) {
       const newDoc: Document = {
         id: documents.length + 1,

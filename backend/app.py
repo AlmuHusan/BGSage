@@ -46,24 +46,15 @@ def get_book(book_id):
     return jsonify(book) if book else (jsonify({"error": "Book not found"}), 404)
 
 # Add a new book
-@app.route('/insertRow', methods=['POST'])
+@app.route('/insertRows', methods=['POST'])
 def insertRow():
     try:
         print(request.json)
-        query=request.json["query"]
+        pages=request.json["pages"]
         print("DING")
-        chat_completion = client.chat.completions.create(
 
-            messages=[
-                {
-                    "role": "user",
-                    "content": query,
-                }
-            ],
-            model="llama-3.3-70b-versatile",
-        )
-        print(chat_completion.choices)
-        return jsonify(chat_completion.choices[0].message.content) , 200
+        print(pages)
+        return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
         print(e)
