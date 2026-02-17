@@ -111,6 +111,7 @@ export default function ChatApp() {
       }),
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
       },
       })
       .then((response) => response.json())
@@ -230,6 +231,7 @@ export default function ChatApp() {
       }),
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
       },
       })
       .then((response) =>console.log(response.json()))
