@@ -4,7 +4,6 @@ from flask_cors import CORS
 from groq import Groq
 import requests
 import os
-import aiohttp
 import json
 import time
 url=os.environ.get("databricksURL")
