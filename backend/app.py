@@ -66,7 +66,7 @@ def insertRow():
                     "warehouse_id": wid,
                     "catalog": "bgsage",
                     "schema": "default",
-                    "statement": "INSERT into bgsage (text_content,page_number,document_source) VALUES ("+
+                    "statement": "INSERT into bgsage (text_content,page_number,document_source) VALUES ("
                                  +pages[p]+","+p+","+request.json["document"]+")"
                 }
                 x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
