@@ -221,10 +221,11 @@ export default function ChatApp() {
       const pageText = textContent.items.map((item: any) => item.str).join(' ');
       pages.push(pageText);
     }
-    console.log(pages)
+    console.log(pages)//pages
     await fetch('https://bgsageapi.onrender.com/insertRows', {
       method: 'POST',
       body: JSON.stringify({
+        document:file?.name,
         pages: pages,
       }),
       headers: {

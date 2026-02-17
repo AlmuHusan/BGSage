@@ -2,7 +2,14 @@ from flask import Flask, jsonify, request
 import os
 from flask_cors import CORS
 from groq import Groq
-
+import requests
+import os
+import aiohttp
+import json
+import time
+url=os.environ.get("databricksURL")
+wid=os.environ.get("databricksWID")
+apiKey=os.environ.get("databricksAPI")
 app = Flask(__name__)
 CORS(app)
 CORS(app, origins=['https://bgsage.onrender.com'])
@@ -52,7 +59,20 @@ def insertRow():
         print(request.json)
         pages=request.json["pages"]
         print("DING")
-
+        for p in range(pages):
+            if pages[p]!='':
+                print(p)
+                print(pages[p])
+                myobj = {
+                    "warehouse_id": wid,
+                    "catalog": "bgsage",
+                    "schema": "default",
+                    "statement": "INSERT into bgsage (text_content,page_number,document_source) VALUES ("+
+                                 +pages[p]+","+p+","+request.json["document"]+")"
+                }
+                x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
+                resX = json.loads(x.text)
+                print(resX)
         print(pages)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
