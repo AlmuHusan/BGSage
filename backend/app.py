@@ -58,7 +58,7 @@ def insertRow():
         print(request.json)
         pages=request.json["pages"]
         print("DING")
-        for p in range(pages):
+        for p in range(len(pages)):
             if pages[p]!='':
                 print(p)
                 print(pages[p])
