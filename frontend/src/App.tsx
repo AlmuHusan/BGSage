@@ -232,6 +232,7 @@ export default function ChatApp() {
         'Content-type': 'application/json; charset=UTF-8',
       },
       })
+      .then((response) =>console.log(response.json()))
     if (file && currentChat) {
       const newDoc: Document = {
         id: documents.length + 1,
