@@ -67,6 +67,7 @@ def insertRow():
                 print(name)
                 print(p)
                 statement="INSERT into bgsage (text_content,page_number,document_source) VALUES ({},{},{})".format(str(pages[p]),page,name)
+                print(statement)
                 myobj = {
                     "warehouse_id": wid,
                     "catalog": "bgsage",
