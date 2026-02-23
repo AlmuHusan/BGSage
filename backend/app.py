@@ -62,11 +62,12 @@ def insertRow():
                 print(p)
                 print(pages[p])
                 print(request.json["document"])
+                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES ({},{},{})".format(str(pages[p]),str(p),str(request.json["document"]))
                 myobj = {
                     "warehouse_id": wid,
                     "catalog": "bgsage",
                     "schema": "default",
-                    "statement": "INSERT into bgsage (text_content,page_number,document_source) VALUES ("+str(pages[p])+","+str(p)+","+str(request.json["document"])+")"
+                    "statement": statement
                 }
                 x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
                 resX = json.loads(x.text)
