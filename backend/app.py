@@ -61,6 +61,7 @@ def insertRow():
             if pages[p]!='':
                 print(p)
                 print(pages[p])
+                print(request.json["document"])
                 myobj = {
                     "warehouse_id": wid,
                     "catalog": "bgsage",
