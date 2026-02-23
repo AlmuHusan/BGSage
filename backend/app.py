@@ -10,8 +10,7 @@ url=os.environ.get("databricksURL")
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 app = Flask(__name__)
-CORS(app)
-CORS(app, origins=['https://bgsage.onrender.com'])
+CORS(app, origins=['*'])
 client = Groq(
     api_key=os.environ.get("llmAPIKey"),
 )
