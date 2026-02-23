@@ -59,9 +59,9 @@ def insertRow():
         print("DING")
         for p in range(len(pages)):
             if pages[p]!='':
-                print(p)
-                print(pages[p])
-                print(request.json["document"])
+                print(type(p))
+                print(type(pages[p]))
+                print(type(request.json["document"]))
                 statement="INSERT into bgsage (text_content,page_number,document_source) VALUES ({},{},{})".format(str(pages[p]),str(p),str(request.json["document"]))
                 myobj = {
                     "warehouse_id": wid,
