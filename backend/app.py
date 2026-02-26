@@ -7,6 +7,7 @@ import os
 import json
 import time
 url=os.environ.get("databricksURL")
+url = 'https://'+url+'.cloud.databricks.com/api/2.0/sql/statements'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 app = Flask(__name__)
