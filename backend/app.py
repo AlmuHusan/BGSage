@@ -6,8 +6,10 @@ import requests
 import os
 import json
 import time
+import aiohttp
 url=os.environ.get("databricksURL")
 url = 'https://'+url+'.cloud.databricks.com/api/2.0/sql/statements'
+jobURL='https://'+url+'.cloud.databricks.com/api/2.2/jobs'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 embJobKey=os.environ.get("databricksEmbJobID")
@@ -81,34 +83,48 @@ def insertRows():
 
 # Update a book
 @app.route('/vectorSearch', methods=['POST'])
-def vectorSearch(book_id):
-    embedJobParam={
-        "job_id": embJobKey,
-        "job_parameters": {
-            "property1": "string",
-            "property2": "string"
-        },
-    }
-    vectorSearchParam={
-        "num_results": 3,
-        "columns": [
-            "embedding",
-            "text_content"
-        ],
-        "query_vector": [
-            
-        ],
-        "query_type": "HYBRID",
-        "query_text": "Whats are pattern grids used for"
-    }
-    book = next((book for book in books if book["id"] == book_id), None)
-    if not book:
-        return jsonify({"error": "Book not found"}), 404
+async def vectorSearch():
+    try:
+        print(request.json)
+        queryString = request.json["queryString"]
+        embedJobParam={
+            "job_id": embJobKey,
+            "job_parameters": {
+                "queryString": queryString,
+            },
+        }
+        while True:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(jobURL+"/run-now", json=embedJobParam, headers={"Authorization": "Bearer " + apiKey}) as res:
+                    result = await res.json()  # or response.text() for text
+                    print(result)
+                    state = result["status"]["state"]
+                    if state == "SUCCEEDED":
+                        break
+                    elif state == "PENDING":
+                        print(f"Status: {state}, waiting...")
+                        await time.sleep(.25)  # Wait 2 seconds before checking again
 
-    data = request.json
-    book.update(data)
-    return jsonify(book)
+                    else:
+                        print("Operation failed!")
+                        raise Exception(f"Operation failed: {state}")
+        vectorSearchParam={
+            "num_results": 3,
+            "columns": [
+                "embedding",
+                "text_content"
+            ],
+            "query_vector": [
 
+            ],
+            "query_type": "HYBRID",
+            "query_text": "Whats are pattern grids used for"
+        }
+        return jsonify(result)
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 # Delete a book
 @app.route('/books/<int:book_id>', methods=['DELETE'])
 def delete_book(book_id):

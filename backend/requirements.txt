@@ -3,3 +3,4 @@ flask-cors
 Gunicorn
 requests
 groq
+aiohttp

@@ -56,11 +56,7 @@ export default function ChatApp() {
   const [rightSidebarExpanded, setRightSidebarExpanded] = useState<boolean>(true);
   const [showLeftSidebar, setShowLeftSidebar] = useState<boolean>(false);
   const [showRightSidebar, setShowRightSidebar] = useState<boolean>(false);
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: 1, name: "Project_Proposal.pdf", size: "2.4 MB", uploadedAt: "Today, 9:30 AM" },
-    { id: 2, name: "Meeting_Notes.docx", size: "156 KB", uploadedAt: "Yesterday" },
-    { id: 3, name: "Budget_2024.xlsx", size: "890 KB", uploadedAt: "Oct 15" },
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [editedName, setEditedName] = useState<string>("");
   const currentChat = chats.find(chat => chat.id === activeChat);
@@ -78,12 +74,14 @@ export default function ChatApp() {
         setRightSidebarExpanded(true); // Keep expanded when shown
       }
     };
-
+    retrieveDocuments();
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
+  const retrieveDocuments = () => {
+    setDocuments([{ id: 1, name: "TERHHEProject_Proposal.pdf", size: "2.4 MB", uploadedAt: "Today, 9:30 AM" }])
+  }
   const  handleSend = async () => {
     if (input.trim() && currentChat) {
       const newMessage: Message = {
@@ -104,6 +102,17 @@ export default function ChatApp() {
           : chat
       ));
       setInput("");
+      const queryData=await fetch('https://bgsageapi.onrender.com/vectorSearch', {
+      method: 'POST',
+      body: JSON.stringify({
+        queryString: input,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
+      },
+      })
+      console.log(queryData.json())
       await fetch('https://bgsageapi.onrender.com/askBGSage', {
       method: 'POST',
       body: JSON.stringify({
