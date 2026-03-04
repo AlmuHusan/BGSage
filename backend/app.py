@@ -10,6 +10,7 @@ url=os.environ.get("databricksURL")
 url = 'https://'+url+'.cloud.databricks.com/api/2.0/sql/statements'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
+embJobKey=os.environ.get("databricksEmbJobID")
 app = Flask(__name__)
 CORS(app, origins=['*'])
 client = Groq(
@@ -53,21 +54,14 @@ def get_book(book_id):
 
 # Add a new book
 @app.route('/insertRows', methods=['POST'])
-def insertRow():
+def insertRows():
     try:
         print(request.json)
         pages=request.json["pages"]
         print("DING")
         for p in range(len(pages)):
             if pages[p]!='':
-                print(type(p))
-                print(type(pages[p]))
-                print(type(request.json["document"]))
-                name=str(request.json["document"])
-                page=str(p)
-                print(name)
-                print(p)
-                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES (\"{}\",{},\"{}\")".format(str(pages[p]),page,name)
+                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES (\"{}\",{},\"{}\")".format(str(pages[p]),p,request.json["document"])
                 print(statement)
                 myobj = {
                     "warehouse_id": wid,
@@ -86,8 +80,27 @@ def insertRow():
         return jsonify("Internal Server Error"),500
 
 # Update a book
-@app.route('/books/<int:book_id>', methods=['PUT'])
-def update_book(book_id):
+@app.route('/vectorSearch', methods=['POST'])
+def vectorSearch(book_id):
+    embedJobParam={
+        "job_id": embJobKey,
+        "job_parameters": {
+            "property1": "string",
+            "property2": "string"
+        },
+    }
+    vectorSearchParam={
+        "num_results": 3,
+        "columns": [
+            "embedding",
+            "text_content"
+        ],
+        "query_vector": [
+            
+        ],
+        "query_type": "HYBRID",
+        "query_text": "Whats are pattern grids used for"
+    }
     book = next((book for book in books if book["id"] == book_id), None)
     if not book:
         return jsonify({"error": "Book not found"}), 404
