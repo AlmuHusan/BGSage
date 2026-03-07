@@ -81,7 +81,7 @@ export default function ChatApp() {
   }, []);
   const retrieveDocuments = async() => {
     setDocuments([{ id: 1, name: "TERHHEProject_Proposal.pdf", size: "2.4 MB", uploadedAt: "Today, 9:30 AM" }])
-    const queryData=await fetch('https://bgsageapi.onrender.com/books', {
+    const res=await fetch('https://bgsageapi.onrender.com/books', {
       method: 'POST',
       body: JSON.stringify({
         queryString: input,
@@ -91,7 +91,8 @@ export default function ChatApp() {
         'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
       },
       })
-    console.log(queryData)
+    const bookData=await res.json();
+    console.log(bookData)
   }
   const  handleSend = async () => {
     if (input.trim() && currentChat) {
