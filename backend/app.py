@@ -49,11 +49,25 @@ def askBGSage():
         print(e)
         return jsonify("Internal Server Error"),500
 # Get a single book by ID
-@app.route('/books/<int:book_id>', methods=['GET'])
-def get_book(book_id):
-    book = next((book for book in books if book["id"] == book_id), None)
-    return jsonify(book) if book else (jsonify({"error": "Book not found"}), 404)
-
+@app.route('/books', methods=['POST'])
+def get_books():
+    try:
+        statement = "SELECT DISTINCT document_source from bgsage"
+        print(statement)
+        myobj = {
+            "warehouse_id": wid,
+            "catalog": "bgsage",
+            "schema": "default",
+            "statement": statement
+        }
+        x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        return jsonify(resX) , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 # Add a new book
 @app.route('/insertRows', methods=['POST'])
 def insertRows():
