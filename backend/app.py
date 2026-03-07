@@ -62,8 +62,8 @@ def get_books():
         }
         x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
-        print(resX['result']["data_array"])
-        return jsonify(resX) , 200
+        print(resX)
+        return jsonify(resX['result']["data_array"][0]) , 200
     except Exception as e:
         print("Failed")
         print(e)
