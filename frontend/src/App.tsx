@@ -78,7 +78,6 @@ export default function ChatApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const retrieveDocuments = async() => {
-    setDocuments([{ id: (documents.length + 1), name: "TERHHEProject_Proposal.pdf"}])
     const res=await fetch('https://bgsageapi.onrender.com/books', {
       method: 'POST',
       body: JSON.stringify({
