@@ -30,8 +30,6 @@ interface Chat {
 interface Document {
   id: number;
   name: string;
-  size: string;
-  uploadedAt: string;
 }
 
 export default function ChatApp() {
@@ -80,7 +78,7 @@ export default function ChatApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const retrieveDocuments = async() => {
-    setDocuments([{ id: 1, name: "TERHHEProject_Proposal.pdf", size: "2.4 MB", uploadedAt: "Today, 9:30 AM" }])
+    setDocuments([{ id: (documents.length + 1), name: "TERHHEProject_Proposal.pdf"}])
     const res=await fetch('https://bgsageapi.onrender.com/books', {
       method: 'POST',
       body: JSON.stringify({
@@ -260,8 +258,6 @@ export default function ChatApp() {
       const newDoc: Document = {
         id: documents.length + 1,
         name: file.name,
-        size: `${(file.size / 1024).toFixed(0)} KB`,
-        uploadedAt: "Just now"
       };
       setDocuments([newDoc, ...documents]);
       
@@ -651,8 +647,6 @@ const saveChatName = (): void => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">{doc.name}</h4>
-                        <p className="text-xs text-muted-foreground">{doc.size}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{doc.uploadedAt}</p>
                       </div>
                       <Button
                         size="icon"
