@@ -91,6 +91,15 @@ export default function ChatApp() {
       })
     const bookData=await res.json();
     console.log(bookData)
+    const books=[]
+    for (let b=0; b< bookData.length;b++){
+      let book: Document = {
+        id: documents.length + 1,
+        name: bookData[b],
+      };
+      books.push(book)
+    }
+    setDocuments(books)
   }
   const  handleSend = async () => {
     if (input.trim() && currentChat) {
