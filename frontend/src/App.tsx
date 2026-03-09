@@ -99,6 +99,7 @@ export default function ChatApp() {
       };
       books.push(book)
     }
+    console.log(books)
     setDocuments(books)
   }
   const  handleSend = async () => {
