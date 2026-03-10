@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 interface Message {
   id: number;
   text: string;
@@ -27,8 +30,6 @@ interface Chat {
 interface Document {
   id: number;
   name: string;
-  size: string;
-  uploadedAt: string;
 }
 
 export default function ChatApp() {
@@ -53,11 +54,7 @@ export default function ChatApp() {
   const [rightSidebarExpanded, setRightSidebarExpanded] = useState<boolean>(true);
   const [showLeftSidebar, setShowLeftSidebar] = useState<boolean>(false);
   const [showRightSidebar, setShowRightSidebar] = useState<boolean>(false);
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: 1, name: "Project_Proposal.pdf", size: "2.4 MB", uploadedAt: "Today, 9:30 AM" },
-    { id: 2, name: "Meeting_Notes.docx", size: "156 KB", uploadedAt: "Yesterday" },
-    { id: 3, name: "Budget_2024.xlsx", size: "890 KB", uploadedAt: "Oct 15" },
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [editedName, setEditedName] = useState<string>("");
   const currentChat = chats.find(chat => chat.id === activeChat);
@@ -75,12 +72,35 @@ export default function ChatApp() {
         setRightSidebarExpanded(true); // Keep expanded when shown
       }
     };
-
+    retrieveDocuments();
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
+  const retrieveDocuments = async() => {
+    const res=await fetch('https://bgsageapi.onrender.com/books', {
+      method: 'POST',
+      body: JSON.stringify({
+        queryString: input,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
+      },
+      })
+    const bookData=await res.json();
+    console.log(bookData)
+    const books=[]
+    for (let b=0; b< bookData.length;b++){
+      let book: Document = {
+        id: documents.length + 1,
+        name: bookData[b],
+      };
+      books.push(book)
+    }
+    console.log(books)
+    setDocuments(books)
+  }
   const  handleSend = async () => {
     if (input.trim() && currentChat) {
       const newMessage: Message = {
@@ -101,6 +121,17 @@ export default function ChatApp() {
           : chat
       ));
       setInput("");
+      const queryData=await fetch('https://bgsageapi.onrender.com/vectorSearch', {
+      method: 'POST',
+      body: JSON.stringify({
+        queryString: input,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
+      },
+      })
+      console.log(queryData.json())
       await fetch('https://bgsageapi.onrender.com/askBGSage', {
       method: 'POST',
       body: JSON.stringify({
@@ -108,6 +139,7 @@ export default function ChatApp() {
       }),
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
       },
       })
       .then((response) => response.json())
@@ -205,14 +237,36 @@ export default function ChatApp() {
     setRecordingDuration(0);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
+    console.log(e);
+    console.log(file);
+    const arrayBuffer = await file?.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pages=[]
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      pages.push(pageText);
+    }
+    console.log(pages)//pages
+    await fetch('https://bgsageapi.onrender.com/insertRows', {
+      method: 'POST',
+      body: JSON.stringify({
+        document:file?.name,
+        pages: pages,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
+      },
+      })
+      .then((response) =>console.log(response.json()))
     if (file && currentChat) {
       const newDoc: Document = {
         id: documents.length + 1,
         name: file.name,
-        size: `${(file.size / 1024).toFixed(0)} KB`,
-        uploadedAt: "Just now"
       };
       setDocuments([newDoc, ...documents]);
       
@@ -602,8 +656,6 @@ const saveChatName = (): void => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">{doc.name}</h4>
-                        <p className="text-xs text-muted-foreground">{doc.size}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{doc.uploadedAt}</p>
                       </div>
                       <Button
                         size="icon"
