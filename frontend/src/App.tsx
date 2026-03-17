@@ -1,704 +1,337 @@
-import { useState, useEffect } from 'react';
-import { Send, Plus, MessageSquare, Menu, X, Mic, Square, Upload, FileText, Download, ChevronLeft, ChevronRight, Edit2, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import { useState, useEffect, useRef } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import type { Chat, Message, Document } from './components/types';
+import LeftSidebar from './components/ui/left-chats-sidebar';
+import RightSidebar from './components/ui/right-document-sidebar';
+import ChatArea from './components/ui/chat';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'system';
-  time: string;
-  isVoice?: boolean;
-  isFile?: boolean;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const API_BASE = 'https://bgsageapi.onrender.com';
+
+const API_HEADERS = {
+  'Content-Type': 'application/json; charset=UTF-8',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function currentTime(): string {
+  return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-interface Chat {
-  id: number;
-  name: string;
-  initials: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  messages: Message[];
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-interface Document {
-  id: number;
-  name: string;
+async function extractPdfPages(file: File): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pages: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    pages.push(textContent.items.map((item: any) => item.str).join(' '));
+  }
+  return pages;
 }
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+
+async function apiFetchBooks(query: string): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/books`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ queryString: query }),
+  });
+  return res.json();
+}
+
+async function apiAskBGSage(query: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/askBGSage`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ query }),
+  });
+  return res.json();
+}
+
+async function apiInsertRows(documentName: string, pages: string[]): Promise<void> {
+  await fetch(`${API_BASE}/insertRows`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ document: documentName, pages }),
+  });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatApp() {
   const [chats, setChats] = useState<Chat[]>([
     {
       id: 1,
-      name: "Alex Johnson",
-      initials: "AJ",
-      lastMessage: "Pretty good! Working on some projects.",
-      time: "10:32 AM",
+      name: 'Session 1',
+      lastMessage: '',
+      time: '10:32 AM',
       unread: 0,
-      messages: []
-    }
+      messages: [],
+    },
   ]);
 
-  const [activeChat, setActiveChat] = useState<number>(1);
-  const [input, setInput] = useState<string>("");
-
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  const [leftSidebarExpanded, setLeftSidebarExpanded] = useState<boolean>(true);
-  const [rightSidebarExpanded, setRightSidebarExpanded] = useState<boolean>(true);
-  const [showLeftSidebar, setShowLeftSidebar] = useState<boolean>(false);
-  const [showRightSidebar, setShowRightSidebar] = useState<boolean>(false);
+  const [activeChat, setActiveChat] = useState(1);
+  const [input, setInput] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [leftSidebarExpanded, setLeftSidebarExpanded] = useState(true);
+  const [rightSidebarExpanded, setRightSidebarExpanded] = useState(true);
+  const [showLeftSidebar, setShowLeftSidebar] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [isEditingName, setIsEditingName] = useState<boolean>(false);
-  const [editedName, setEditedName] = useState<string>("");
-  const currentChat = chats.find(chat => chat.id === activeChat);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentChat = chats.find((chat) => chat.id === activeChat);
+
+  // ── Effects ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const handleResize = (): void => {
-      if (window.innerWidth >= 768) {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
         setLeftSidebarExpanded(true);
         setRightSidebarExpanded(true);
         setShowLeftSidebar(false);
         setShowRightSidebar(false);
-      } else {
-        // On mobile, keep sidebars collapsed by default
-        setLeftSidebarExpanded(true); // Keep expanded when shown
-        setRightSidebarExpanded(true); // Keep expanded when shown
       }
     };
+
     retrieveDocuments();
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const retrieveDocuments = async() => {
-    const res=await fetch('https://bgsageapi.onrender.com/books', {
-      method: 'POST',
-      body: JSON.stringify({
-        queryString: input,
-      }),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
-      },
-      })
-    const bookData=await res.json();
-    console.log(bookData)
-    const books=[]
-    for (let b=0; b< bookData.length;b++){
-      let book: Document = {
-        id: documents.length + 1,
-        name: bookData[b],
-      };
-      books.push(book)
-    }
-    console.log(books)
-    setDocuments(books)
-  }
-  const  handleSend = async () => {
-    if (input.trim() && currentChat) {
-      const newMessage: Message = {
-        id: currentChat.messages.length + 1,
-        text: input,
-        sender: "user",
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setChats(chats.map(chat => 
-        chat.id === activeChat 
-          ? { 
-              ...chat, 
-              messages: [...chat.messages, newMessage],
-              lastMessage: input,
-              time: "Just now"
-            }
-          : chat
-      ));
-      setInput("");
-      const queryData=await fetch('https://bgsageapi.onrender.com/vectorSearch', {
-      method: 'POST',
-      body: JSON.stringify({
-        queryString: input,
-      }),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
-      },
-      })
-      console.log(queryData.json())
-      await fetch('https://bgsageapi.onrender.com/askBGSage', {
-      method: 'POST',
-      body: JSON.stringify({
-        query: input,
-      }),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
-      },
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-        
-        const responseMessage: Message = {
-            id: currentChat.messages.length + 1,
-            text: data,
-            sender: "system",
-            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-          };
-        setChats(chats.map(chat => 
-        chat.id === activeChat 
-          ? { 
-              ...chat, 
-              messages: [...chat.messages, newMessage,responseMessage],
-              lastMessage: data,
-              time: "Just now"
-            }
-          : chat
-      ));
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
-      
-    }
-  };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+  // ── Chat state helpers ───────────────────────────────────────────────────
+
+  function updateChat(chatId: number, updates: Partial<Chat>): void {
+    setChats((prev) =>
+      prev.map((chat) => (chat.id === chatId ? { ...chat, ...updates } : chat))
+    );
+  }
+
+  function addMessageToChat(chatId: number, message: Message, lastMessage: string): void {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? { ...chat, messages: [...chat.messages, message], lastMessage, time: 'Just now' }
+          : chat
+      )
+    );
+  }
+
+  // ── Documents ────────────────────────────────────────────────────────────
+
+  async function retrieveDocuments(): Promise<void> {
+    try {
+      const bookData = await apiFetchBooks('');
+      setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
+    } catch (err) {
+      console.error('Failed to retrieve documents:', err);
+    }
+  }
+
+  function deleteDocument(docId: number): void {
+    setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+  }
+
+  // ── Messaging ────────────────────────────────────────────────────────────
+
+  async function handleSend(): Promise<void> {
+    const trimmed = input.trim();
+    if (!trimmed || !currentChat) return;
+
+    const userMessage: Message = {
+      id: currentChat.messages.length + 1,
+      text: trimmed,
+      sender: 'user',
+      time: currentTime(),
+    };
+
+    addMessageToChat(activeChat, userMessage, trimmed);
+    setInput('');
+
+    try {
+      const responseText = await apiAskBGSage(trimmed);
+      const systemMessage: Message = {
+        id: currentChat.messages.length + 2,
+        text: responseText,
+        sender: 'system',
+        time: currentTime(),
+      };
+      addMessageToChat(activeChat, systemMessage, responseText);
+    } catch (err) {
+      console.error('Failed to get response:', err);
+    }
+  }
+
+  function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>): void {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }
 
-  const createNewChat = (): void => {
-    const newChatId = Math.max(...chats.map(c => c.id)) + 1;
+  // ── Chat management ──────────────────────────────────────────────────────
+
+  function createNewChat(): void {
+    const newId = Math.max(...chats.map((c) => c.id)) + 1;
     const newChat: Chat = {
-      id: newChatId,
-      name: `New Chat ${newChatId}`,
-      initials: "NC",
-      lastMessage: "Start a conversation...",
-      time: "Now",
+      id: newId,
+      name: `New Chat ${newId}`,
+      lastMessage: 'Start a conversation...',
+      time: 'Now',
       unread: 0,
-      messages: []
+      messages: [],
     };
-    setChats([newChat, ...chats]);
-    setActiveChat(newChatId);
-  };
-  const deleteDocument = (docId: number): void => {
-    setDocuments(documents.filter(doc => doc.id !== docId));
-  };
-  const startRecording = (): void => {
-    setIsRecording(true);
-    setRecordingDuration(0);
-    
-    const interval = setInterval(() => {
-      setRecordingDuration(prev => prev + 1);
-    }, 1000);
-    
-    (window as any).recordingInterval = interval;
-  };
+    setChats((prev) => [newChat, ...prev]);
+    setActiveChat(newId);
+  }
 
-  const stopRecording = (): void => {
-    if (!currentChat) return;
-    
-    setIsRecording(false);
-    clearInterval((window as any).recordingInterval);
-    
-    const minutes = Math.floor(recordingDuration / 60);
-    const seconds = recordingDuration % 60;
-    const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    
-    const voiceMessage: Message = {
-      id: currentChat.messages.length + 1,
-      text: `🎤 Voice message (${duration})`,
-      sender: "user",
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      isVoice: true
-    };
-    
-    setChats(chats.map(chat => 
-      chat.id === activeChat 
-        ? { 
-            ...chat, 
-            messages: [...chat.messages, voiceMessage],
-            lastMessage: `🎤 Voice message`,
-            time: "Just now"
-          }
-        : chat
-    ));
-    
-    setRecordingDuration(0);
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    console.log(e);
-    console.log(file);
-    const arrayBuffer = await file?.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const pages=[]
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      pages.push(pageText);
-    }
-    console.log(pages)//pages
-    await fetch('https://bgsageapi.onrender.com/insertRows', {
-      method: 'POST',
-      body: JSON.stringify({
-        document:file?.name,
-        pages: pages,
-      }),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-        'Access-Control-Allow-Origin': ' https://bgsageapi.onrender.com/'
-      },
-      })
-      .then((response) =>console.log(response.json()))
-    if (file && currentChat) {
-      const newDoc: Document = {
-        id: documents.length + 1,
-        name: file.name,
-      };
-      setDocuments([newDoc, ...documents]);
-      
-      const fileMessage: Message = {
-        id: currentChat.messages.length + 1,
-        text: `📎 Uploaded ${file.name}`,
-        sender: "user",
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        isFile: true
-      };
-      
-      setChats(chats.map(chat => 
-        chat.id === activeChat 
-          ? { 
-              ...chat, 
-              messages: [...chat.messages, fileMessage],
-              lastMessage: `📎 ${file.name}`,
-              time: "Just now"
-            }
-          : chat
-      ));
-    }
-  };
-const saveChatName = (): void => {
-    if (editedName.trim() && currentChat) {
-      setChats(chats.map(chat => 
-        chat.id === activeChat 
-          ? { ...chat, name: editedName.trim() }
-          : chat
-      ));
-      setIsEditingName(false);
-    }
-  };
-
-  const startEditingName = (): void => {
+  function startEditingName(): void {
     if (currentChat) {
       setEditedName(currentChat.name);
       setIsEditingName(true);
     }
-  };
+  }
+
+  function saveChatName(): void {
+    if (editedName.trim() && currentChat) {
+      updateChat(activeChat, { name: editedName.trim() });
+      setIsEditingName(false);
+    }
+  }
+
+  // ── Recording ────────────────────────────────────────────────────────────
+
+  function startRecording(): void {
+    setIsRecording(true);
+    setRecordingDuration(0);
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingDuration((prev) => prev + 1);
+    }, 1000);
+  }
+
+  function stopRecording(): void {
+    if (!currentChat) return;
+
+    setIsRecording(false);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    const voiceMessage: Message = {
+      id: currentChat.messages.length + 1,
+      text: `🎤 Voice message (${formatDuration(recordingDuration)})`,
+      sender: 'user',
+      time: currentTime(),
+      isVoice: true,
+    };
+
+    addMessageToChat(activeChat, voiceMessage, '🎤 Voice message');
+    setRecordingDuration(0);
+  }
+
+  // ── File upload ──────────────────────────────────────────────────────────
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = e.target.files?.[0];
+    if (!file || !currentChat) return;
+
+    try {
+      const pages = await extractPdfPages(file);
+      await apiInsertRows(file.name, pages);
+
+      setDocuments((prev) => [{ id: prev.length + 1, name: file.name }, ...prev]);
+
+      const fileMessage: Message = {
+        id: currentChat.messages.length + 1,
+        text: `📎 Uploaded ${file.name}`,
+        sender: 'user',
+        time: currentTime(),
+        isFile: true,
+      };
+
+      addMessageToChat(activeChat, fileMessage, `📎 ${file.name}`);
+    } catch (err) {
+      console.error('File upload failed:', err);
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div className="flex h-screen bg-background relative overflow-hidden">
-      {/* Mobile Overlay for Left Sidebar */}
+      {/* Mobile overlays */}
       {showLeftSidebar && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setShowLeftSidebar(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setShowLeftSidebar(false)} />
       )}
-
-      {/* Mobile Overlay for Right Sidebar */}
       {showRightSidebar && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setShowRightSidebar(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setShowRightSidebar(false)} />
       )}
 
-      {/* Left Sidebar */}
-      <div 
-        className={`bg-card border-r transition-all duration-300 ease-in-out flex flex-col z-50 ${
-          showLeftSidebar ? 'fixed left-0 top-0 bottom-0 w-80' : 'hidden'
-        } md:flex md:relative ${
-          leftSidebarExpanded ? 'md:w-80' : 'md:w-16'
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="p-4 border-b flex items-center justify-between">
-          {leftSidebarExpanded ? (
-            <>
-              <h1 className="text-xl font-bold">Messages</h1>
-              <div className="flex gap-2">
-                <Button
-                  onClick={createNewChat}
-                  size="icon"
-                  variant="default"
-                  title="New Chat"
-                >
-                  <Plus size={18} />
-                </Button>
-                <Button
-                  onClick={() => {
-                    setLeftSidebarExpanded(false);
-                    if (window.innerWidth < 768) {
-                      setShowLeftSidebar(false);
-                    }
-                  }}
-                  size="icon"
-                  variant="ghost"
-                  title="Collapse Sidebar"
-                >
-                  <X size={18} />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Button
-              onClick={() => setLeftSidebarExpanded(true)}
-              size="icon"
-              variant="ghost"
-              className="mx-auto"
-              title="Expand Sidebar"
-            >
-              <Menu size={18} />
-            </Button>
-          )}
-        </div>
+      <LeftSidebar
+        chats={chats}
+        activeChat={activeChat}
+        isExpanded={leftSidebarExpanded}
+        isVisible={showLeftSidebar}
+        onSelectChat={(id) => { setActiveChat(id); setShowLeftSidebar(false); }}
+        onNewChat={createNewChat}
+        onExpand={() => setLeftSidebarExpanded(true)}
+        onCollapse={() => {
+          setLeftSidebarExpanded(false);
+          if (window.innerWidth < 768) setShowLeftSidebar(false);
+        }}
+      />
 
-        {/* Chat List */}
-        <ScrollArea className="flex-1">
-          {chats.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => {
-                setActiveChat(chat.id);
-                setShowLeftSidebar(false);
-              }}
-              className={`p-4 cursor-pointer border-b hover:bg-accent transition-colors ${
-                activeChat === chat.id ? 'bg-accent border-l-4 border-l-primary' : ''
-              }`}
-            >
-              {leftSidebarExpanded ? (
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold truncate">{chat.name}</h3>
-                      <span className="text-xs text-muted-foreground">{chat.time}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
-                      {chat.unread > 0 && (
-                        <Badge className="ml-2">{chat.unread}</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-center relative">
-                  {chat.unread > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                      {chat.unread}
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </ScrollArea>
-      </div>
+      <ChatArea
+        currentChat={currentChat}
+        input={input}
+        isRecording={isRecording}
+        recordingDuration={recordingDuration}
+        isEditingName={isEditingName}
+        editedName={editedName}
+        onInputChange={setInput}
+        onSend={handleSend}
+        onKeyPress={handleKeyPress}
+        onStartRecording={startRecording}
+        onStopRecording={stopRecording}
+        onFileUpload={handleFileUpload}
+        onStartEditingName={startEditingName}
+        onSaveChatName={saveChatName}
+        onCancelEditingName={() => setIsEditingName(false)}
+        onEditedNameChange={setEditedName}
+        onShowLeftSidebar={() => setShowLeftSidebar(true)}
+        onShowRightSidebar={() => setShowRightSidebar(true)}
+      />
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {currentChat ? (
-          <>
-            {/* Chat Header */}
-            <div className="bg-card border-b p-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => setShowLeftSidebar(true)}
-                  size="icon"
-                  variant="ghost"
-                  className="md:hidden"
-                  title="Show chats"
-                >
-                  <Menu size={18} />
-                </Button>
-                <div className="flex-1 flex items-center gap-2">
-                  {isEditingName ? (
-                    <>
-                      <Input
-                        type="text"
-                        value={editedName}
-                        onChange={(e) => setEditedName(e.target.value)}
-                        onKeyUp={(e) => {
-                          if (e.key === 'Enter') {
-                            saveChatName();
-                          }
-                        }}
-                        className="h-9 max-w-xs"
-                        autoFocus
-                      />
-                      <Button
-                        onClick={saveChatName}
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9"
-                        title="Save name"
-                      >
-                        <Check size={18} />
-                      </Button>
-                      <Button
-                        onClick={() => setIsEditingName(false)}
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9"
-                        title="Cancel"
-                      >
-                        <X size={18} />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex-1">
-                        <h2 className="font-semibold text-lg">{currentChat.name}</h2>
-                      </div>
-                      <Button
-                        onClick={startEditingName}
-                        size="icon"
-                        variant="ghost"
-                        title="Edit chat name"
-                      >
-                        <Edit2 size={18} />
-                      </Button>
-                    </>
-                  )}
-                </div>
-                <Button
-                  onClick={() => setShowRightSidebar(true)}
-                  size="icon"
-                  variant="ghost"
-                  className="md:hidden"
-                  title="Show documents"
-                >
-                  <FileText size={18} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4">
-              {currentChat.messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <MessageSquare size={48} className="mx-auto mb-2 opacity-50" />
-                    <p>No messages yet. Start the conversation!</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {currentChat.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                          message.sender === 'user'
-                            ? 'bg-primary text-primary-foreground rounded-br-sm'
-                            : 'bg-muted rounded-bl-sm'
-                        }`}
-                      >
-                        <p className="break-words">{message.text}</p>
-                        <p
-                          className={`text-xs mt-1 ${
-                            message.sender === 'user' ? 'opacity-70' : 'text-muted-foreground'
-                          }`}
-                        >
-                          {message.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-
-            {/* Input Area */}
-            <div className="bg-card border-t p-4">
-              {isRecording ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-red-600 dark:text-red-400 font-medium">
-                      Recording... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                  <Button onClick={stopRecording} size="icon" variant="destructive">
-                    <Square size={18} />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyUp={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="flex-1"
-                  />
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                  <Button 
-                    onClick={() => document.getElementById('file-upload')?.click()} 
-                    size="icon"
-                    variant="outline"
-                    title="Upload document"
-                  >
-                    <Upload size={18} />
-                  </Button>
-                  <Button 
-                    onClick={startRecording} 
-                    size="icon"
-                    variant="outline"
-                    title="Record voice message"
-                  >
-                    <Mic size={18} />
-                  </Button>
-                  <Button onClick={handleSend} size="icon">
-                    <Send size={18} />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Select a chat to start messaging</p>
-          </div>
-        )}
-      </div>
-
-      {/* Right Sidebar - Documents */}
-      <div 
-        className={`bg-card border-l transition-all duration-300 ease-in-out flex flex-col z-50 ${
-          showRightSidebar ? 'fixed right-0 top-0 bottom-0 w-80' : 'hidden'
-        } md:flex md:relative ${
-          rightSidebarExpanded ? 'md:w-80' : 'md:w-12'
-        }`}
-      >
-        {/* Right Sidebar Header */}
-        <div className="p-4 border-b flex items-center justify-between">
-          {rightSidebarExpanded ? (
-            <>
-            <Button
-                onClick={() => {
-                  setRightSidebarExpanded(false);
-                  if (window.innerWidth < 768) {
-                    setShowRightSidebar(false);
-                  }
-                }}
-                size="icon"
-                variant="ghost"
-                title="Collapse Sidebar"
-              >
-                <ChevronRight size={18} />
-              </Button>
-              <h2 className="text-xl font-bold flex-1 text-center">Documents</h2>
-              
-            </>
-          ) : (
-            <Button
-              onClick={() => setRightSidebarExpanded(true)}
-              size="icon"
-              variant="ghost"
-              title="Expand Sidebar"
-              className="mx-auto"
-            >
-              <ChevronLeft size={18} />
-            </Button>
-          )}
-        </div>
-
-        {/* Documents List */}
-        {rightSidebarExpanded && (
-          <>
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
-              {documents.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No documents uploaded</p>
-                </div>
-              ) : (
-                documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="p-3 bg-accent rounded-lg hover:bg-accent/80 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
-                        <FileText size={20} className="text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{doc.name}</h4>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </Button>
-                      <Button
-                            onClick={() => deleteDocument(doc.id)}
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
-                            title="Delete document"
-                          >
-                            <X size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-           <div className="p-4 border-t">
-              <input
-                type="file"
-                id="sidebar-file-upload"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Button
-                onClick={() => document.getElementById('sidebar-file-upload')?.click()}
-                className="w-full"
-                variant="default"
-              >
-                <Upload size={18} className="mr-2" />
-                Upload Document
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
+      <RightSidebar
+        documents={documents}
+        isExpanded={rightSidebarExpanded}
+        isVisible={showRightSidebar}
+        onExpand={() => setRightSidebarExpanded(true)}
+        onCollapse={() => {
+          setRightSidebarExpanded(false);
+          if (window.innerWidth < 768) setShowRightSidebar(false);
+        }}
+        onDelete={deleteDocument}
+        onUpload={handleFileUpload}
+      />
     </div>
   );
 }

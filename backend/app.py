@@ -18,14 +18,8 @@ CORS(app, origins=['*'])
 client = Groq(
     api_key=os.environ.get("llmAPIKey"),
 )
-# Sample data
-books = [
-    {"id": 1, "title": "Concept of Physics", "author": "H.C Verma"},
-    {"id": 2, "title": "Gunahon ka Devta", "author": "Dharamvir Bharti"},
-    {"id": 3, "title": "Problems in General Physsics", "author": "I.E Irodov"}
-]
 
-# Get all books
+#Ask the LLM a question
 @app.route('/askBGSage', methods=['POST'])
 def askBGSage():
     try:
@@ -48,7 +42,7 @@ def askBGSage():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Get a single book by ID
+# Get a list of all books uploaded
 @app.route('/books', methods=['POST'])
 def get_books():
     try:
@@ -68,7 +62,7 @@ def get_books():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Add a new book
+# Insert data from a new book
 @app.route('/insertRows', methods=['POST'])
 def insertRows():
     try:
@@ -95,7 +89,7 @@ def insertRows():
         print(e)
         return jsonify("Internal Server Error"),500
 
-# Update a book
+# Search for relevant passages
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
     try:
@@ -139,12 +133,7 @@ async def vectorSearch():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Delete a book
-@app.route('/books/<int:book_id>', methods=['DELETE'])
-def delete_book(book_id):
-    global books
-    books = [book for book in books if book["id"] != book_id]
-    return jsonify({"message": "Book deleted"})
+
 
 if __name__ == '__main__':
     app.run(debug=True,port=10001)
