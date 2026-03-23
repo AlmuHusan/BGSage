@@ -68,6 +68,14 @@ async function apiInsertRows(documentName: string, pages: string[]): Promise<voi
   });
 }
 
+async function apiVectorSearch(queryString: string): Promise<void> {
+  await fetch(`${API_BASE}/vectorSearch`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ queryString: queryString }),
+  });
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatApp() {
@@ -166,14 +174,16 @@ export default function ChatApp() {
     setInput('');
 
     try {
-      const responseText = await apiAskBGSage(trimmed);
+      const resVectorSearch = await apiVectorSearch(trimmed);
+      console.log(resVectorSearch)
+      const resAskBGSage = await apiAskBGSage(trimmed);
       const systemMessage: Message = {
         id: currentChat.messages.length + 2,
-        text: responseText,
+        text: resAskBGSage,
         sender: 'system',
         time: currentTime(),
       };
-      addMessageToChat(activeChat, systemMessage, responseText);
+      addMessageToChat(activeChat, systemMessage, resAskBGSage);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
