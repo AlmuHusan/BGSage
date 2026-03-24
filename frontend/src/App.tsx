@@ -4,7 +4,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { Chat, Message, Document } from './components/types';
 import LeftSidebar from './components/ui/left-chats-sidebar';
 import RightSidebar from './components/ui/right-document-sidebar';
-import ChatArea from './components/ui/chat';
+import ChatArea from './components/ui/ChatArea';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -42,11 +42,10 @@ async function extractPdfPages(file: File): Promise<string[]> {
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-async function apiFetchBooks(query: string): Promise<string[]> {
+async function apiFetchBooks(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/books`, {
     method: 'POST',
-    headers: API_HEADERS,
-    body: JSON.stringify({ queryString: query }),
+    headers: API_HEADERS
   });
   return res.json();
 }
@@ -146,7 +145,8 @@ export default function ChatApp() {
 
   async function retrieveDocuments(): Promise<void> {
     try {
-      const bookData = await apiFetchBooks('');
+      const bookData = await apiFetchBooks();
+      console.log(bookDaara)
       setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);

@@ -60,7 +60,7 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
       <div className="bg-card border-b p-4">
         <div className="flex items-center gap-3">
