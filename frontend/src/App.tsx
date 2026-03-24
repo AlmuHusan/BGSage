@@ -146,7 +146,7 @@ export default function ChatApp() {
   async function retrieveDocuments(): Promise<void> {
     try {
       const bookData = await apiFetchBooks();
-      console.log(bookDaara)
+      console.log(bookData)
       setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
@@ -286,7 +286,7 @@ export default function ChatApp() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen bg-background relative overflow-hidden">
+    <div className="flex h-screen max-h-screen bg-background relative overflow-hidden">
       {/* Mobile overlays */}
       {showLeftSidebar && (
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setShowLeftSidebar(false)} />
