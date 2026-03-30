@@ -77,7 +77,7 @@ def insertRows():
         pages=request.json["pages"]
         print("DING")
         data = []
-        id=index.describe_namespace(namespace='default')
+        id=index.describe_namespace(namespace='__default__')
         print(id)
         id=int(id["record_count"])
         print(id)
@@ -87,7 +87,7 @@ def insertRows():
                 id=id+1
 
 
-        index.upsert_records(namespace="default",records=data)
+        index.upsert_records(namespace="__default__",records=data)
         print(pages)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
