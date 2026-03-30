@@ -7,12 +7,19 @@ import os
 import json
 import time
 import aiohttp
+from pinecone import Pinecone, ServerlessSpec
+pineconeAPIKey=os.environ.get("PINECONE_API_KEY")
+pineconeIndexName = os.environ.get("PINECONE_API_KEY")
+pc = Pinecone(api_key=pineconeAPIKey)
+index = pc.Index(pineconeIndexName)
+
 url=os.environ.get("databricksURL")
 url = 'https://'+url+'.cloud.databricks.com/api/2.0/sql/statements'
 jobURL='https://'+url+'.cloud.databricks.com/api/2.2/jobs'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 embJobKey=os.environ.get("databricksEmbJobID")
+
 app = Flask(__name__)
 CORS(app, origins=['*'])
 client = Groq(
@@ -69,19 +76,13 @@ def insertRows():
         print(request.json)
         pages=request.json["pages"]
         print("DING")
+        data = []
         for p in range(len(pages)):
             if pages[p]!='':
-                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES (\"{}\",{},\"{}\")".format(str(pages[p]),p,request.json["document"])
-                print(statement)
-                myobj = {
-                    "warehouse_id": wid,
-                    "catalog": "bgsage",
-                    "schema": "default",
-                    "statement": statement
-                }
-                x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
-                resX = json.loads(x.text)
-                print(resX)
+                data.append({"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
+
+
+        index.upsert_records(records=data)
         print(pages)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
@@ -98,8 +99,8 @@ async def vectorSearch():
         embedJobParam={
             "job_id": embJobKey,
             "job_parameters": {
-                "queryString": queryString,
-            },
+                "queryString": queryString
+            }
         }
         while True:
             async with aiohttp.ClientSession() as session:

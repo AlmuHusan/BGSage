@@ -4,3 +4,4 @@ Gunicorn
 requests
 groq
 aiohttp
+pinecone
