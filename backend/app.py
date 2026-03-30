@@ -82,7 +82,7 @@ def insertRows():
                 data.append({"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
 
 
-        index.upsert_records(records=data)
+        index.upsert_records(namespace="default",records=data)
         print(pages)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
