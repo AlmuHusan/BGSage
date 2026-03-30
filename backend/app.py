@@ -77,7 +77,10 @@ def insertRows():
         pages=request.json["pages"]
         print("DING")
         data = []
-        id=len(index.list(namespace='default'))
+        id=index.describe_namespace(namespace='default')
+        print(id)
+        id=int(id["record_count"])
+        print(id)
         for p in range(len(pages)):
             if pages[p]!='':
                 data.append({"id":id,"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
