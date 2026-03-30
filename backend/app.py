@@ -9,7 +9,7 @@ import time
 import aiohttp
 from pinecone import Pinecone, ServerlessSpec
 pineconeAPIKey=os.environ.get("PINECONE_API_KEY")
-pineconeIndexName = os.environ.get("PINECONE_API_KEY")
+pineconeIndexName = os.environ.get("PINECONE_API_ENV")
 pc = Pinecone(api_key=pineconeAPIKey)
 index = pc.Index(pineconeIndexName)
 
