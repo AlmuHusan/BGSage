@@ -60,7 +60,7 @@ def get_books():
             "top_k": 4
             }
         )
-
+        print(data)
         resX = json.loads(data)
         print(resX)
         return jsonify(resX) , 200
