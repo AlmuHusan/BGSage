@@ -79,7 +79,7 @@ def insertRows():
         data = []
         id=index.describe_namespace(namespace='__default__')
         print(id)
-        id=int(id["record_count"])
+        id=int(id["record_count"])+101
         print(id)
         for p in range(len(pages)):
             if pages[p]!='':
