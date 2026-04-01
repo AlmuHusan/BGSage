@@ -53,9 +53,12 @@ def askBGSage():
 @app.route('/books', methods=['POST'])
 def get_books():
     try:
-        data=index.query(
-            top_k=1000,
-            include_values=True
+        data=index.search(
+            namespace="__default__",
+            query={
+            "inputs": {"text": "Disease prevention"},
+            "top_k": 4
+            }
         )
 
         resX = json.loads(data)
