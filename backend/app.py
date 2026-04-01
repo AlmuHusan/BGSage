@@ -83,7 +83,7 @@ def insertRows():
         print(id)
         for p in range(len(pages)):
             if pages[p]!='':
-                data.append({"id":id,"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
+                data.append({"id":str(id),"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
                 id=id+1
 
 
