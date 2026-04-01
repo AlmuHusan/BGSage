@@ -53,18 +53,14 @@ def askBGSage():
 @app.route('/books', methods=['POST'])
 def get_books():
     try:
-        statement = "SELECT DISTINCT document_source from bgsage"
-        print(statement)
-        myobj = {
-            "warehouse_id": wid,
-            "catalog": "bgsage",
-            "schema": "default",
-            "statement": statement
-        }
-        x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
+        data=index.query(
+            top_k=1000,
+            include_values=True
+        )
+
+        resX = json.loads(data)
         print(resX)
-        return jsonify(resX['result']["data_array"][0]) , 200
+        return jsonify(resX) , 200
     except Exception as e:
         print("Failed")
         print(e)
