@@ -56,8 +56,8 @@ def get_books():
         data=index.search(
             namespace="__default__",
             query={
-            "inputs": {"text": "Disease prevention"},
-            "top_k": 4
+            "inputs": {"text": "the"},
+            "top_k": 1000
             }
         )
         print(data)
