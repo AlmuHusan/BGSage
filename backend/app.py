@@ -61,7 +61,7 @@ def get_books():
             }
         )
         print(data["result"]["hits"])
-        resX = json.loads(data["result"]["hits"])
+        resX = json.dumps(data["result"]["hits"])
         print(resX)
         return jsonify(resX) , 200
     except Exception as e:
