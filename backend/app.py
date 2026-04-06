@@ -53,17 +53,21 @@ def askBGSage():
 @app.route('/books', methods=['POST'])
 def get_books():
     try:
-        data=index.search(
+        data = index.search(
             namespace="__default__",
             query={
-            "inputs": {"text": "the"},
-            "top_k": 2
+                "inputs": {"text": "the"},
+                "top_k": 1000
             }
         )
-        #print(data["result"]["hits"])
+        # print(data["result"]["hits"])
         resX = data["result"]["hits"]
         print(resX)
-        return jsonify(resX) , 200
+        bookList=[]
+        for r in resX:
+            bookList.append(r["fields"]["text"])
+        set(bookList)
+        return jsonify(bookList) , 200
     except Exception as e:
         print("Failed")
         print(e)
@@ -98,6 +102,16 @@ def insertRows():
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
     try:
+        data = index.search(
+            namespace="__default__",
+            query={
+                "inputs": {"text": "the"},
+                "top_k": 1000
+            }
+        )
+        # print(data["result"]["hits"])
+        resX = data["result"]["hits"]
+
         print(request.json)
         queryString = request.json["queryString"]
         embedJobParam={
