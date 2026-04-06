@@ -60,8 +60,8 @@ def get_books():
             "top_k": 2
             }
         )
-        print(data["result"]["hits"])
-        resX = json.dumps(data["result"]["hits"])
+        #print(data["result"]["hits"])
+        resX = data["result"]["hits"]
         print(resX)
         return jsonify(resX) , 200
     except Exception as e:
