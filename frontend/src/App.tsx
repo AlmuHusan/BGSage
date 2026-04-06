@@ -172,7 +172,7 @@ export default function ChatApp() {
 
     addMessageToChat(activeChat, userMessage, trimmed);
     setInput('');
-
+    console.log(trimmed)
     try {
       const resVectorSearch = await apiVectorSearch(trimmed);
       console.log(resVectorSearch)
