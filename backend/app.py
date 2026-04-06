@@ -56,7 +56,7 @@ def get_books():
         data = index.search(
             namespace="__default__",
             query={
-                "inputs": {"text": "the"},
+                "inputs": {"text": request.json["queryString"]},
                 "top_k": 1000
             }
         )
@@ -65,7 +65,7 @@ def get_books():
         print(resX)
         bookList=[]
         for r in resX:
-            bookList.append(r["fields"]["text"])
+            bookList.append(r["fields"]["source"])
         set(bookList)
         return jsonify(bookList) , 200
     except Exception as e:
@@ -106,48 +106,16 @@ async def vectorSearch():
             namespace="__default__",
             query={
                 "inputs": {"text": "the"},
-                "top_k": 1000
+                "top_k": 5
             }
         )
         # print(data["result"]["hits"])
         resX = data["result"]["hits"]
-
-        print(request.json)
-        queryString = request.json["queryString"]
-        embedJobParam={
-            "job_id": embJobKey,
-            "job_parameters": {
-                "queryString": queryString
-            }
-        }
-        while True:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(jobURL+"/run-now", json=embedJobParam, headers={"Authorization": "Bearer " + apiKey}) as res:
-                    result = await res.json()  # or response.text() for text
-                    print(result)
-                    state = result["status"]["state"]
-                    if state == "SUCCEEDED":
-                        break
-                    elif state == "PENDING":
-                        print(f"Status: {state}, waiting...")
-                        await time.sleep(.25)  # Wait 2 seconds before checking again
-
-                    else:
-                        print("Operation failed!")
-                        raise Exception(f"Operation failed: {state}")
-        vectorSearchParam={
-            "num_results": 3,
-            "columns": [
-                "embedding",
-                "text_content"
-            ],
-            "query_vector": [
-
-            ],
-            "query_type": "HYBRID",
-            "query_text": "Whats are pattern grids used for"
-        }
-        return jsonify(result)
+        print(resX)
+        results = []
+        for r in resX:
+            results.append(r["fields"]["text"])
+        return jsonify(results), 200
     except Exception as e:
         print("Failed")
         print(e)
