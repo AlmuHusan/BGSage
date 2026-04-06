@@ -57,7 +57,7 @@ def get_books():
             namespace="__default__",
             query={
             "inputs": {"text": "the"},
-            "top_k": 1000
+            "top_k": 2
             }
         )
         print(data)
