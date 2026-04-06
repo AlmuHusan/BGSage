@@ -61,6 +61,7 @@ def get_books():
             }
         )
         print(data)
+        print(data["result"])
         resX = json.loads(data)
         print(resX)
         return jsonify(resX) , 200
