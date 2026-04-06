@@ -56,7 +56,7 @@ def get_books():
         data = index.search(
             namespace="__default__",
             query={
-                "inputs": {"text": request.json["queryString"]},
+                "inputs": {"text": "the"},
                 "top_k": 1000
             }
         )
@@ -105,7 +105,7 @@ async def vectorSearch():
         data = index.search(
             namespace="__default__",
             query={
-                "inputs": {"text": "the"},
+                "inputs": {"text": request.json["queryString"]},
                 "top_k": 5
             }
         )
