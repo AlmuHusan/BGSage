@@ -32,13 +32,21 @@ def askBGSage():
     try:
         print(request.json)
         query=request.json["query"]
+        contextList=request.json["context"]
+        context=""
+        for c in contextList:
+            context=c+"\n"
         print("DING")
         chat_completion = client.chat.completions.create(
 
             messages=[
                 {
+                    "role": "system",
+                    "content": "You are a board game expert with the task of helping people learn board games."
+                },
+                {
                     "role": "user",
-                    "content": query,
+                    "content": context+" "+query,
                 }
             ],
             model="llama-3.3-70b-versatile",

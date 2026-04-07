@@ -50,11 +50,11 @@ async function apiFetchBooks(): Promise<string[]> {
   return res.json();
 }
 
-async function apiAskBGSage(query: string): Promise<string> {
+async function apiAskBGSage(query: string,context: string): Promise<string> {
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ "query":query,"context": context }),
   });
   return res.json();
 }
@@ -68,11 +68,12 @@ async function apiInsertRows(documentName: string, pages: string[]): Promise<voi
 }
 
 async function apiVectorSearch(queryString: string): Promise<void> {
-  await fetch(`${API_BASE}/vectorSearch`, {
+  const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
     body: JSON.stringify({ queryString: queryString }),
   });
+  return res.json();
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -176,7 +177,7 @@ export default function ChatApp() {
     try {
       const resVectorSearch = await apiVectorSearch(trimmed);
       console.log(resVectorSearch)
-      const resAskBGSage = await apiAskBGSage(trimmed);
+      const resAskBGSage = await apiAskBGSage(trimmed,resVectorSearch);
       const systemMessage: Message = {
         id: currentChat.messages.length + 2,
         text: resAskBGSage,
