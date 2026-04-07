@@ -50,7 +50,7 @@ async function apiFetchBooks(): Promise<string[]> {
   return res.json();
 }
 
-async function apiAskBGSage(query: string,context: string): Promise<string> {
+async function apiAskBGSage(query: string,context: string[]): Promise<string> {
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -67,7 +67,7 @@ async function apiInsertRows(documentName: string, pages: string[]): Promise<voi
   });
 }
 
-async function apiVectorSearch(queryString: string): Promise<void> {
+async function apiVectorSearch(queryString: string): Promise<string[]> {
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -175,7 +175,7 @@ export default function ChatApp() {
     setInput('');
     console.log(trimmed)
     try {
-      const resVectorSearch = await apiVectorSearch(trimmed);
+      const resVectorSearch  = await apiVectorSearch(trimmed);
       console.log(resVectorSearch)
       const resAskBGSage = await apiAskBGSage(trimmed,resVectorSearch);
       const systemMessage: Message = {
