@@ -66,7 +66,7 @@ def get_books():
         bookList=[]
         for r in resX:
             bookList.append(r["fields"]["source"])
-        bookList=set(bookList)
+        bookList=list(set(bookList))
         return jsonify(bookList) , 200
     except Exception as e:
         print("Failed")
