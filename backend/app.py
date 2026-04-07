@@ -42,7 +42,9 @@ def askBGSage():
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a board game expert with the task of helping people learn board games."
+                    "content": """You are a board game expert with the task of helping people learn board games.
+                    You will be provided a collection of context that is based on the board game the user is playing.
+                     Please help them!"""
                 },
                 {
                     "role": "user",
