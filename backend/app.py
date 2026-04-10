@@ -117,7 +117,7 @@ def deleteDocument():
             },
             namespace="__default__"
         )
-        return jsonify("Upload Successfull") , 200
+        return jsonify("Document deleted!") , 200
     except Exception as e:
         print("Failed")
         print(e)

@@ -160,9 +160,9 @@ export default function ChatApp() {
     }
   }
 
-  function deleteDocument(oldDoc: Document): void {
+  async function deleteDocument(oldDoc: Document): Promise<void> {
     try {
-      await apiDeleteDocument();
+      await apiDeleteDocument(oldDoc.name);
       setDocuments((prev) => prev.filter((doc) => doc.id !== oldDoc.id));
     } catch (err) {
       console.error('Failed to delete document:', err);
