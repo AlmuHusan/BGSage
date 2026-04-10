@@ -43,7 +43,7 @@ async function extractPdfPages(file: File): Promise<string[]> {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 async function apiFetchDocuments(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/books`, {
+  const res = await fetch(`${API_BASE}/documents`, {
     method: 'POST',
     headers: API_HEADERS
   });
