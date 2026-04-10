@@ -52,8 +52,6 @@ def askBGSage():
                 }
             ],
             model="llama-3.3-70b-versatile",
-            include_reasoning=True,
-            reasoning_format="raw"
         )
         print(chat_completion)
         return jsonify(chat_completion.choices[0].message.content) , 200
@@ -62,8 +60,8 @@ def askBGSage():
         print(e)
         return jsonify("Internal Server Error"),500
 # Get a list of all books uploaded
-@app.route('/books', methods=['POST'])
-def get_books():
+@app.route('/documents', methods=['POST'])
+def get_documents():
     try:
         data = index.search(
             namespace="__default__",
@@ -85,8 +83,8 @@ def get_books():
         print(e)
         return jsonify("Internal Server Error"),500
 # Insert data from a new book
-@app.route('/insertRows', methods=['POST'])
-def insertRows():
+@app.route('/insertDocument', methods=['POST'])
+def insertDocument():
     try:
         print(request.json)
         pages=request.json["pages"]
@@ -109,7 +107,21 @@ def insertRows():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-
+@app.route('/deleteDocument', methods=['POST'])
+def deleteDocument():
+    try:
+        print(request.json)
+        index.delete(
+            filter={
+                "source": {"$eq": request.json["document"]}
+            },
+            namespace="__default__"
+        )
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 # Search for relevant passages
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():

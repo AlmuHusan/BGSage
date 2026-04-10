@@ -9,7 +9,7 @@ interface RightSidebarProps {
   isVisible: boolean;
   onExpand: () => void;
   onCollapse: () => void;
-  onDelete: (id: number) => void;
+  onDelete: (doc: Document) => void;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -71,7 +71,7 @@ export default function RightSidebar({
                         <Download size={16} />
                       </Button>
                       <Button
-                        onClick={() => onDelete(doc.id)}
+                        onClick={() => onDelete(doc)}
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"

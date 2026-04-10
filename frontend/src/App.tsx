@@ -42,7 +42,7 @@ async function extractPdfPages(file: File): Promise<string[]> {
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-async function apiFetchBooks(): Promise<string[]> {
+async function apiFetchDocuments(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/books`, {
     method: 'POST',
     headers: API_HEADERS
@@ -59,14 +59,20 @@ async function apiAskBGSage(query: string,context: string[]): Promise<string> {
   return res.json();
 }
 
-async function apiInsertRows(documentName: string, pages: string[]): Promise<void> {
-  await fetch(`${API_BASE}/insertRows`, {
+async function apiInsertBook(documentName: string, pages: string[]): Promise<void> {
+  await fetch(`${API_BASE}/insertDocument`, {
     method: 'POST',
     headers: API_HEADERS,
     body: JSON.stringify({ document: documentName, pages }),
   });
 }
-
+async function apiDeleteDocument(documentName: string): Promise<void> {
+  await fetch(`${API_BASE}/deleteDocument`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ document: documentName }),
+  });
+}
 async function apiVectorSearch(queryString: string): Promise<string[]> {
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
@@ -146,7 +152,7 @@ export default function ChatApp() {
 
   async function retrieveDocuments(): Promise<void> {
     try {
-      const bookData = await apiFetchBooks();
+      const bookData = await apiFetchDocuments();
       console.log(bookData)
       setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
     } catch (err) {
@@ -154,8 +160,14 @@ export default function ChatApp() {
     }
   }
 
-  function deleteDocument(docId: number): void {
-    setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+  function deleteDocument(oldDoc: Document): void {
+    try {
+      await apiDeleteDocument();
+      setDocuments((prev) => prev.filter((doc) => doc.id !== oldDoc.id));
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+    }
+    
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
@@ -266,7 +278,7 @@ export default function ChatApp() {
 
     try {
       const pages = await extractPdfPages(file);
-      await apiInsertRows(file.name, pages);
+      await apiInsertBook(file.name, pages);
 
       setDocuments((prev) => [{ id: prev.length + 1, name: file.name }, ...prev]);
 
