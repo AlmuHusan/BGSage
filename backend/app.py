@@ -52,8 +52,10 @@ def askBGSage():
                 }
             ],
             model="llama-3.3-70b-versatile",
+            include_reasoning=True,
+            reasoning_format="raw"
         )
-        print(chat_completion.choices)
+        print(chat_completion)
         return jsonify(chat_completion.choices[0].message.content) , 200
     except Exception as e:
         print("Failed")
