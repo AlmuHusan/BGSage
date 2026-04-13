@@ -33,7 +33,7 @@ def askBGSage():
         print(request.json)
         query=request.json["query"]
         contextList=request.json["context"]
-        print(contextList)
+        print(str(contextList))
         print("DING")
         chat_completion = client.chat.completions.create(
 
@@ -46,7 +46,7 @@ def askBGSage():
                 },
                 {
                     "role": "user",
-                    "content": contextList+" "+query,
+                    "content": str(contextList)+" "+query,
                 }
             ],
             model="llama-3.3-70b-versatile",
