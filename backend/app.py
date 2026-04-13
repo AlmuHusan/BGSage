@@ -42,7 +42,7 @@ def askBGSage():
                     "role": "system",
                     "content": """You are a board game expert with the task of helping people learn board games.
                     You will be provided a collection of context that is based on the board game rules the user is playing.
-                     Please help them and provide the source and page number of where you are getting your information from!"""
+                     Please help them and provide the sources and page numbers of where you are getting your information from at the end of your statement."""
                 },
                 {
                     "role": "user",
