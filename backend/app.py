@@ -138,7 +138,9 @@ async def vectorSearch():
         print(resX)
         results = []
         for r in resX:
-            results.append(r["fields"]["text"])
+            fieldData=r["fields"]
+            fieldData["pageNumber"]=int(fieldData["pageNumber"])
+            results.append(fieldData)
         return jsonify(results), 200
     except Exception as e:
         print("Failed")
