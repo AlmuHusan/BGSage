@@ -50,11 +50,11 @@ async function apiFetchDocuments(): Promise<string[]> {
   return res.json();
 }
 
-async function apiAskBGSage(query: string,context: string[]): Promise<string> {
+async function apiAskBGSage(query: string, context: string[]): Promise<string> {
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ "query":query,"context": context }),
+    body: JSON.stringify({ query, context }),
   });
   return res.json();
 }
@@ -66,6 +66,7 @@ async function apiInsertBook(documentName: string, pages: string[]): Promise<voi
     body: JSON.stringify({ document: documentName, pages }),
   });
 }
+
 async function apiDeleteDocument(documentName: string): Promise<void> {
   await fetch(`${API_BASE}/deleteDocument`, {
     method: 'POST',
@@ -73,11 +74,15 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
     body: JSON.stringify({ document: documentName }),
   });
 }
-async function apiVectorSearch(queryString: string): Promise<string[]> {
+
+async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ queryString: queryString }),
+    body: JSON.stringify({
+      queryString,
+      filterDocuments
+    }),
   });
   return res.json();
 }
@@ -153,8 +158,8 @@ export default function ChatApp() {
   async function retrieveDocuments(): Promise<void> {
     try {
       const bookData = await apiFetchDocuments();
-      console.log(bookData)
-      setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
+      console.log(bookData);
+      setDocuments(bookData.map((name, index) => ({ id: index + 1, name, selected: false })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
     }
@@ -167,7 +172,27 @@ export default function ChatApp() {
     } catch (err) {
       console.error('Failed to delete document:', err);
     }
-    
+  }
+
+  function toggleDocSelection(docId: number): void {
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === docId ? { ...doc, selected: !doc.selected } : doc))
+    );
+  }
+
+  function toggleAllDocs(selected: boolean): void {
+    setDocuments((prev) => prev.map((doc) => ({ ...doc, selected })));
+  }
+
+  // Returns selected doc names, or empty array if none or all are selected
+  function getFilterDocuments(): string[] {
+    const selectedDocs = documents.filter((doc) => doc.selected);
+    const allSelected = selectedDocs.length === documents.length;
+    const noneSelected = selectedDocs.length === 0;
+
+    if (allSelected || noneSelected) return [];
+
+    return selectedDocs.map((doc) => doc.name);
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
@@ -185,11 +210,16 @@ export default function ChatApp() {
 
     addMessageToChat(activeChat, userMessage, trimmed);
     setInput('');
-    console.log(trimmed)
+    console.log(trimmed);
+
     try {
-      const resVectorSearch  = await apiVectorSearch(trimmed);
-      console.log(resVectorSearch)
-      const resAskBGSage = await apiAskBGSage(trimmed,resVectorSearch);
+      const filterDocuments = getFilterDocuments();
+      console.log('Filtering by documents:', filterDocuments.length ? filterDocuments : 'all');
+
+      const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
+      console.log(resVectorSearch);
+
+      const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
       const systemMessage: Message = {
         id: currentChat.messages.length + 2,
         text: resAskBGSage,
@@ -280,7 +310,7 @@ export default function ChatApp() {
       const pages = await extractPdfPages(file);
       await apiInsertBook(file.name, pages);
 
-      setDocuments((prev) => [{ id: prev.length + 1, name: file.name }, ...prev]);
+      setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
         id: currentChat.messages.length + 1,
@@ -347,6 +377,8 @@ export default function ChatApp() {
         documents={documents}
         isExpanded={rightSidebarExpanded}
         isVisible={showRightSidebar}
+        onToggleDoc={toggleDocSelection}
+        onToggleAll={toggleAllDocs}
         onExpand={() => setRightSidebarExpanded(true)}
         onCollapse={() => {
           setRightSidebarExpanded(false);

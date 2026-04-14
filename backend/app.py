@@ -42,7 +42,8 @@ def askBGSage():
                     "role": "system",
                     "content": """You are a board game expert with the task of helping people learn board games.
                     You will be provided a collection of context that is based on the board game rules the user is playing.
-                     Please help them and provide the sources and page numbers of where you are getting your information from at the end of your statement."""
+                     Please help them and provide the sources and page numbers of where you are getting your information
+                    from at the end of your statement in order of page number"""
                 },
                 {
                     "role": "user",
@@ -128,7 +129,8 @@ async def vectorSearch():
             namespace="__default__",
             query={
                 "inputs": {"text": request.json["queryString"]},
-                "top_k": 5
+                "top_k": 5,
+                "filter":{"source":request.json["filterDocuments"]}
             }
         )
         # print(data["result"]["hits"])
