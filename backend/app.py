@@ -125,6 +125,7 @@ def deleteDocument():
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
     try:
+        print(request.json)
         data = index.search(
             namespace="__default__",
             query={
