@@ -51,6 +51,10 @@ async function apiFetchDocuments(): Promise<string[]> {
 }
 
 async function apiAskBGSage(query: string, context: string[]): Promise<string> {
+  console.log(context)
+  if (context as unknown=="Internal Server Error"){
+    return "Internal Server Error";
+  }
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -81,7 +85,7 @@ async function apiVectorSearch(queryString: string, filterDocuments?: string[]):
     headers: API_HEADERS,
     body: JSON.stringify({
       queryString,
-      filterDocuments
+      filterDocuments,
     }),
   });
   return res.json();
@@ -180,17 +184,12 @@ export default function ChatApp() {
     );
   }
 
-  function toggleAllDocs(selected: boolean): void {
-    setDocuments((prev) => prev.map((doc) => ({ ...doc, selected })));
-  }
 
   // Returns selected doc names, or empty array if none or all are selected
   function getFilterDocuments(): string[] {
     const selectedDocs = documents.filter((doc) => doc.selected);
-    const allSelected = selectedDocs.length === documents.length;
-    const noneSelected = selectedDocs.length === 0;
 
-    if (allSelected || noneSelected) return [];
+    if (selectedDocs.length === 0) return [];
 
     return selectedDocs.map((doc) => doc.name);
   }
@@ -207,26 +206,32 @@ export default function ChatApp() {
       sender: 'user',
       time: currentTime(),
     };
-
+    const systemMessage: Message = {
+          id: currentChat.messages.length + 2,
+          text: "",
+          sender: 'system',
+          time: currentTime(),
+        };
     addMessageToChat(activeChat, userMessage, trimmed);
     setInput('');
     console.log(trimmed);
 
     try {
       const filterDocuments = getFilterDocuments();
-      console.log('Filtering by documents:', filterDocuments.length ? filterDocuments : 'all');
+      console.log('Filtering by documents:',filterDocuments);
+      if(filterDocuments && filterDocuments.length > 0 ){
+        const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
+        console.log(resVectorSearch);
 
-      const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
-      console.log(resVectorSearch);
-
-      const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
-      const systemMessage: Message = {
-        id: currentChat.messages.length + 2,
-        text: resAskBGSage,
-        sender: 'system',
-        time: currentTime(),
-      };
-      addMessageToChat(activeChat, systemMessage, resAskBGSage);
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
+        systemMessage.time=currentTime()
+        systemMessage.text=resAskBGSage
+      }
+      else{
+        systemMessage.time=currentTime()
+        systemMessage.text="No Documents selected/uploaded"
+      }
+      addMessageToChat(activeChat, systemMessage, systemMessage.text);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -378,7 +383,6 @@ export default function ChatApp() {
         isExpanded={rightSidebarExpanded}
         isVisible={showRightSidebar}
         onToggleDoc={toggleDocSelection}
-        onToggleAll={toggleAllDocs}
         onExpand={() => setRightSidebarExpanded(true)}
         onCollapse={() => {
           setRightSidebarExpanded(false);

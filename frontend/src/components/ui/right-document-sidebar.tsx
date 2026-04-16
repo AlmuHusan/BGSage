@@ -21,7 +21,6 @@ export default function RightSidebar({
   isExpanded,
   isVisible,
   onToggleDoc,
-  onToggleAll,
   onExpand,
   onCollapse,
   onDelete,
@@ -30,9 +29,6 @@ export default function RightSidebar({
   const allChecked = documents.length > 0 && documents.every((doc) => doc.selected);
   const someChecked = documents.some((doc) => doc.selected) && !allChecked;
 
-  function handleToggleAll() {
-    onToggleAll(!allChecked);
-  }
 
   return (
     <div
@@ -68,27 +64,12 @@ export default function RightSidebar({
                 </div>
               ) : (
                 <>
-                  {/* Select all row */}
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <Checkbox
-                      id="select-all"
-                      checked={allChecked}
-                      data-state={someChecked ? 'indeterminate' : undefined}
-                      onCheckedChange={handleToggleAll}
-                    />
-                    <label htmlFor="select-all" className="text-xs text-muted-foreground cursor-pointer select-none">
-                      Toggle Select
-                    </label>
-                  </div>
+
 
                   {documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className={`p-3 rounded-lg transition-colors ${
-                        doc.selected
-                          ? 'bg-primary/10 border border-primary/30'
-                          : 'bg-accent hover:bg-accent/80'
-                      }`}
+                      className="p-3 rounded-lg transition-colors bg-accent/80 hover:bg-primary/10"
                     >
                       <div className="flex items-center gap-3">
                         <Checkbox
@@ -98,7 +79,7 @@ export default function RightSidebar({
                           className="flex-shrink-0"
                         />
                         <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
-                          <FileText size={16} className="text-primary" />
+                          <FileText size={20} className="text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-sm truncate">{doc.name}</h4>
