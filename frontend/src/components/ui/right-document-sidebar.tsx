@@ -9,7 +9,6 @@ interface RightSidebarProps {
   isExpanded: boolean;
   isVisible: boolean;
   onToggleDoc: (docId: number) => void;
-  onToggleAll: (selected: boolean) => void;
   onExpand: () => void;
   onCollapse: () => void;
   onDelete: (doc: Document) => void;
