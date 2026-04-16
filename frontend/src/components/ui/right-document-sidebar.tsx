@@ -25,9 +25,6 @@ export default function RightSidebar({
   onDelete,
   onUpload,
 }: RightSidebarProps) {
-  const allChecked = documents.length > 0 && documents.every((doc) => doc.selected);
-  const someChecked = documents.some((doc) => doc.selected) && !allChecked;
-
 
   return (
     <div
