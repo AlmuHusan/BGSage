@@ -131,7 +131,7 @@ async def vectorSearch():
             query={
                 "inputs": {"text": request.json["queryString"]},
                 "top_k": 5,
-                "filter":{"source":request.json["filterDocuments"]}
+                "filter":{"source":[f for f in request.json["filterDocuments"]]}
             }
         )
         # print(data["result"]["hits"])
