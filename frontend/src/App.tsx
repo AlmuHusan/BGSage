@@ -4,7 +4,7 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { Chat, Message, Document } from './components/types';
 import LeftSidebar from './components/ui/left-chats-sidebar';
 import RightSidebar from './components/ui/right-document-sidebar';
-import ChatArea from './components/ui/chat';
+import ChatArea from './components/ui/ChatArea';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -42,30 +42,53 @@ async function extractPdfPages(file: File): Promise<string[]> {
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-async function apiFetchBooks(query: string): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/books`, {
+async function apiFetchDocuments(): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/documents`, {
     method: 'POST',
-    headers: API_HEADERS,
-    body: JSON.stringify({ queryString: query }),
+    headers: API_HEADERS
   });
   return res.json();
 }
 
-async function apiAskBGSage(query: string): Promise<string> {
+async function apiAskBGSage(query: string, context: string[]): Promise<string> {
+  console.log(context)
+  if (context as unknown=="Internal Server Error"){
+    return "Internal Server Error";
+  }
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, context }),
   });
   return res.json();
 }
 
-async function apiInsertRows(documentName: string, pages: string[]): Promise<void> {
-  await fetch(`${API_BASE}/insertRows`, {
+async function apiInsertBook(documentName: string, pages: string[]): Promise<void> {
+  await fetch(`${API_BASE}/insertDocument`, {
     method: 'POST',
     headers: API_HEADERS,
     body: JSON.stringify({ document: documentName, pages }),
   });
+}
+
+async function apiDeleteDocument(documentName: string): Promise<void> {
+  await fetch(`${API_BASE}/deleteDocument`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ document: documentName }),
+  });
+}
+
+async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/vectorSearch`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({
+      queryString,
+      filterDocuments,
+    }),
+  });
+  return res.json();
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -138,15 +161,37 @@ export default function ChatApp() {
 
   async function retrieveDocuments(): Promise<void> {
     try {
-      const bookData = await apiFetchBooks('');
-      setDocuments(bookData.map((name, index) => ({ id: index + 1, name })));
+      const bookData = await apiFetchDocuments();
+      console.log(bookData);
+      setDocuments(bookData.map((name, index) => ({ id: index + 1, name, selected: false })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
     }
   }
 
-  function deleteDocument(docId: number): void {
-    setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+  async function deleteDocument(oldDoc: Document): Promise<void> {
+    try {
+      await apiDeleteDocument(oldDoc.name);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== oldDoc.id));
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+    }
+  }
+
+  function toggleDocSelection(docId: number): void {
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === docId ? { ...doc, selected: !doc.selected } : doc))
+    );
+  }
+
+
+  // Returns selected doc names, or empty array if none or all are selected
+  function getFilterDocuments(): string[] {
+    const selectedDocs = documents.filter((doc) => doc.selected);
+
+    if (selectedDocs.length === 0) return [];
+
+    return selectedDocs.map((doc) => doc.name);
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
@@ -161,19 +206,32 @@ export default function ChatApp() {
       sender: 'user',
       time: currentTime(),
     };
-
+    const systemMessage: Message = {
+          id: currentChat.messages.length + 2,
+          text: "",
+          sender: 'system',
+          time: currentTime(),
+        };
     addMessageToChat(activeChat, userMessage, trimmed);
     setInput('');
+    console.log(trimmed);
 
     try {
-      const responseText = await apiAskBGSage(trimmed);
-      const systemMessage: Message = {
-        id: currentChat.messages.length + 2,
-        text: responseText,
-        sender: 'system',
-        time: currentTime(),
-      };
-      addMessageToChat(activeChat, systemMessage, responseText);
+      const filterDocuments = getFilterDocuments();
+      console.log('Filtering by documents:',filterDocuments);
+      if(filterDocuments && filterDocuments.length > 0 ){
+        const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
+        console.log(resVectorSearch);
+
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
+        systemMessage.time=currentTime()
+        systemMessage.text=resAskBGSage
+      }
+      else{
+        systemMessage.time=currentTime()
+        systemMessage.text="No Documents selected/uploaded"
+      }
+      addMessageToChat(activeChat, systemMessage, systemMessage.text);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -255,9 +313,9 @@ export default function ChatApp() {
 
     try {
       const pages = await extractPdfPages(file);
-      await apiInsertRows(file.name, pages);
+      await apiInsertBook(file.name, pages);
 
-      setDocuments((prev) => [{ id: prev.length + 1, name: file.name }, ...prev]);
+      setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
         id: currentChat.messages.length + 1,
@@ -276,7 +334,7 @@ export default function ChatApp() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen bg-background relative overflow-hidden">
+    <div className="flex h-screen max-h-screen bg-background relative overflow-hidden">
       {/* Mobile overlays */}
       {showLeftSidebar && (
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setShowLeftSidebar(false)} />
@@ -324,6 +382,7 @@ export default function ChatApp() {
         documents={documents}
         isExpanded={rightSidebarExpanded}
         isVisible={showRightSidebar}
+        onToggleDoc={toggleDocSelection}
         onExpand={() => setRightSidebarExpanded(true)}
         onCollapse={() => {
           setRightSidebarExpanded(false);

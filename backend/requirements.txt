@@ -1,6 +1,7 @@
-Flask
+flask[async]
 flask-cors
 Gunicorn
 requests
 groq
 aiohttp
+pinecone

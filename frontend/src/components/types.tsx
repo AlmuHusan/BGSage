@@ -19,4 +19,5 @@ export interface Chat {
 export interface Document {
   id: number;
   name: string;
+  selected: boolean;
 }

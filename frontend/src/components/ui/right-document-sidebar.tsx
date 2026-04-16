@@ -1,5 +1,6 @@
-import { FileText, Download, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Document } from '../types';
 
@@ -7,9 +8,10 @@ interface RightSidebarProps {
   documents: Document[];
   isExpanded: boolean;
   isVisible: boolean;
+  onToggleDoc: (docId: number) => void;
   onExpand: () => void;
   onCollapse: () => void;
-  onDelete: (id: number) => void;
+  onDelete: (doc: Document) => void;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -17,11 +19,13 @@ export default function RightSidebar({
   documents,
   isExpanded,
   isVisible,
+  onToggleDoc,
   onExpand,
   onCollapse,
   onDelete,
   onUpload,
 }: RightSidebarProps) {
+
   return (
     <div
       className={`bg-card border-l transition-all duration-300 ease-in-out flex flex-col z-50 ${
@@ -55,33 +59,40 @@ export default function RightSidebar({
                   <p className="text-sm">No documents uploaded</p>
                 </div>
               ) : (
-                documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="p-3 bg-accent rounded-lg hover:bg-accent/80 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
-                        <FileText size={20} className="text-primary" />
+                <>
+
+
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="p-3 rounded-lg transition-colors bg-accent/80 hover:bg-primary/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`doc-${doc.id}`}
+                          checked={doc.selected}
+                          onCheckedChange={() => onToggleDoc(doc.id)}
+                          className="flex-shrink-0"
+                        />
+                        <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                          <FileText size={20} className="text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{doc.name}</h4>
+                        </div>
+                        <Button
+                          onClick={() => onDelete(doc)}
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 flex-shrink-0 hover:bg-destructive hover:text-destructive-foreground"
+                          title="Delete document"
+                        >
+                          <X size={16} />
+                        </Button>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{doc.name}</h4>
-                      </div>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" title="Download">
-                        <Download size={16} />
-                      </Button>
-                      <Button
-                        onClick={() => onDelete(doc.id)}
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
-                        title="Delete document"
-                      >
-                        <X size={16} />
-                      </Button>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
           </ScrollArea>

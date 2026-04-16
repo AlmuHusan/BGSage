@@ -60,7 +60,7 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Header */}
       <div className="bg-card border-b p-4">
         <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export default function ChatArea({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 min-h-0">
         {currentChat.messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">
