@@ -7,7 +7,7 @@ export interface Message {
   isFile?: boolean;
 }
  
-export interface Chat {
+export interface Session {
   id: number;
   name: string;
   lastMessage: string;

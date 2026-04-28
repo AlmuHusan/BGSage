@@ -61,7 +61,7 @@ def askBGSage():
         print(e)
         return jsonify("Internal Server Error"),500
 # Get a list of all books uploaded
-@app.route('/documents', methods=['POST'])
+@app.route('/documents', methods=['GET'])
 def get_documents():
     try:
         data = index.search(
@@ -79,6 +79,51 @@ def get_documents():
             bookList.append(r["fields"]["source"])
         bookList=list(set(bookList))
         return jsonify(bookList) , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/sessions', methods=['POST'])
+def get_books():
+    try:
+        statement = "SELECT sid,name from sessions where uid = 1"
+        print(statement)
+        myobj = {
+            "warehouse_id": wid,
+            "catalog": "bgsage",
+            "schema": "default",
+            "statement": statement
+        }
+        x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        return jsonify(resX['result']["data_array"][0]) , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+# Insert data from a new book
+@app.route('/updateSession', methods=['POST'])
+def insertRows():
+    try:
+        print(request.json)
+        pages=request.json["pages"]
+        print("DING")
+        for p in range(len(pages)):
+            if pages[p]!='':
+                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES (\"{}\",{},\"{}\")".format(str(pages[p]),p,request.json["document"])
+                print(statement)
+                myobj = {
+                    "warehouse_id": wid,
+                    "catalog": "bgsage",
+                    "schema": "default",
+                    "statement": statement
+                }
+                x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
+                resX = json.loads(x.text)
+                print(resX)
+        print(pages)
+        return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
         print(e)

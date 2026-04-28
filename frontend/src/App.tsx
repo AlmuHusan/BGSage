@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
-import type { Chat, Message, Document } from './components/types';
+import type { Session, Message, Document } from './components/types';
 import LeftSidebar from './components/ui/left-chats-sidebar';
 import RightSidebar from './components/ui/right-document-sidebar';
 import ChatArea from './components/ui/ChatArea';
@@ -9,7 +9,6 @@ import ChatArea from './components/ui/ChatArea';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
 const API_BASE = 'https://bgsageapi.onrender.com';
 
 const API_HEADERS = {
@@ -44,7 +43,15 @@ async function extractPdfPages(file: File): Promise<string[]> {
 
 async function apiFetchDocuments(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/documents`, {
-    method: 'POST',
+    method: 'GET',
+    headers: API_HEADERS
+  });
+  return res.json();
+}
+
+async function apiFetchSessions(): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/sessions`, {
+    method: 'GET',
     headers: API_HEADERS
   });
   return res.json();
@@ -94,16 +101,7 @@ async function apiVectorSearch(queryString: string, filterDocuments?: string[]):
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatApp() {
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: 1,
-      name: 'Session 1',
-      lastMessage: '',
-      time: '10:32 AM',
-      unread: 0,
-      messages: [],
-    },
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([]);
 
   const [activeChat, setActiveChat] = useState(1);
   const [input, setInput] = useState('');
@@ -118,7 +116,7 @@ export default function ChatApp() {
   const [editedName, setEditedName] = useState('');
 
   const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentChat = chats.find((chat) => chat.id === activeChat);
+  const currentSession = chats.find((chat) => chat.id === activeChat);
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -134,12 +132,23 @@ export default function ChatApp() {
     };
 
     retrieveDocuments();
+    retrieveSessions();
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // ── Chat state helpers ───────────────────────────────────────────────────
+
+   async function retrieveSessions(): Promise<void> {
+    try {
+      const sessionData = await apiFetchSessions();
+      console.log(sessionData);
+      setDocuments(sessionData.map((name, index) => ({ id: index + 1, name, selected: false })));
+    } catch (err) {
+      console.error('Failed to retrieve documents:', err);
+    }
+  }
 
   function updateChat(chatId: number, updates: Partial<Chat>): void {
     setChats((prev) =>
