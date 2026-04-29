@@ -83,7 +83,7 @@ def get_documents():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-@app.route('/sessions', methods=['POST'])
+@app.route('/sessions', methods=['GET'])
 def get_books():
     try:
         statement = "SELECT sid,name from sessions where uid = 1"
