@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { Session, Message, Document } from './components/types';
 import LeftSidebar from './components/ui/left-chats-sidebar';
 import RightSidebar from './components/ui/right-document-sidebar';
 import ChatArea from './components/ui/ChatArea';
+
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -21,11 +22,6 @@ function currentTime(): string {
   return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 async function extractPdfPages(file: File): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
@@ -103,10 +99,8 @@ async function apiVectorSearch(queryString: string, filterDocuments?: string[]):
 export default function ChatApp() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
-  const [activeChat, setActiveChat] = useState(1);
+  const [activeSession, setActiveSession] = useState(1);
   const [input, setInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [leftSidebarExpanded, setLeftSidebarExpanded] = useState(true);
   const [rightSidebarExpanded, setRightSidebarExpanded] = useState(true);
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
@@ -115,8 +109,7 @@ export default function ChatApp() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentSession = chats.find((chat) => chat.id === activeChat);
+  const currentSession = sessions.find((sessions) => sessions.id === activeSession);
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -150,18 +143,18 @@ export default function ChatApp() {
     }
   }
 
-  function updateChat(chatId: number, updates: Partial<Chat>): void {
-    setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, ...updates } : chat))
+  function updateChat(sessionId: number, updates: Partial<Session>): void {
+    setSessions((prev) =>
+      prev.map((chat) => (chat.id === sessionId ? { ...chat, ...updates } : chat))
     );
   }
 
-  function addMessageToChat(chatId: number, message: Message, lastMessage: string): void {
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, message], lastMessage, time: 'Just now' }
-          : chat
+  function addMessageToChat(sessionId: number, message: Message, lastMessage: string): void {
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === sessionId
+          ? { ...session, messages: [...session.messages, message], lastMessage, time: 'Just now' }
+          : session
       )
     );
   }
@@ -207,21 +200,21 @@ export default function ChatApp() {
 
   async function handleSend(): Promise<void> {
     const trimmed = input.trim();
-    if (!trimmed || !currentChat) return;
+    if (!trimmed || !currentSession) return;
 
     const userMessage: Message = {
-      id: currentChat.messages.length + 1,
+      id: currentSession.messages.length + 1,
       text: trimmed,
       sender: 'user',
       time: currentTime(),
     };
     const systemMessage: Message = {
-          id: currentChat.messages.length + 2,
+          id: currentSession.messages.length + 2,
           text: "",
           sender: 'system',
           time: currentTime(),
         };
-    addMessageToChat(activeChat, userMessage, trimmed);
+    addMessageToChat(activeSession, userMessage, trimmed);
     setInput('');
     console.log(trimmed);
 
@@ -240,7 +233,7 @@ export default function ChatApp() {
         systemMessage.time=currentTime()
         systemMessage.text="No Documents selected/uploaded"
       }
-      addMessageToChat(activeChat, systemMessage, systemMessage.text);
+      addMessageToChat(activeSession, systemMessage, systemMessage.text);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -255,9 +248,9 @@ export default function ChatApp() {
 
   // ── Chat management ──────────────────────────────────────────────────────
 
-  function createNewChat(): void {
-    const newId = Math.max(...chats.map((c) => c.id)) + 1;
-    const newChat: Chat = {
+  function createNewSession(): void {
+    const newId = Math.max(...sessions.map((c) => c.id)) + 1;
+    const newChat: Session = {
       id: newId,
       name: `New Chat ${newId}`,
       lastMessage: 'Start a conversation...',
@@ -265,60 +258,30 @@ export default function ChatApp() {
       unread: 0,
       messages: [],
     };
-    setChats((prev) => [newChat, ...prev]);
-    setActiveChat(newId);
+    setSessions((prev) => [newChat, ...prev]);
+    setActiveSession(newId);
   }
 
   function startEditingName(): void {
-    if (currentChat) {
-      setEditedName(currentChat.name);
+    if (currentSession) {
+      setEditedName(currentSession.name);
       setIsEditingName(true);
     }
   }
 
   function saveChatName(): void {
-    if (editedName.trim() && currentChat) {
-      updateChat(activeChat, { name: editedName.trim() });
+    if (editedName.trim() && currentSession) {
+      updateChat(activeSession, { name: editedName.trim() });
       setIsEditingName(false);
     }
   }
 
-  // ── Recording ────────────────────────────────────────────────────────────
-
-  function startRecording(): void {
-    setIsRecording(true);
-    setRecordingDuration(0);
-    recordingIntervalRef.current = setInterval(() => {
-      setRecordingDuration((prev) => prev + 1);
-    }, 1000);
-  }
-
-  function stopRecording(): void {
-    if (!currentChat) return;
-
-    setIsRecording(false);
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-
-    const voiceMessage: Message = {
-      id: currentChat.messages.length + 1,
-      text: `🎤 Voice message (${formatDuration(recordingDuration)})`,
-      sender: 'user',
-      time: currentTime(),
-      isVoice: true,
-    };
-
-    addMessageToChat(activeChat, voiceMessage, '🎤 Voice message');
-    setRecordingDuration(0);
-  }
 
   // ── File upload ──────────────────────────────────────────────────────────
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
-    if (!file || !currentChat) return;
+    if (!file || !currentSession) return;
 
     try {
       const pages = await extractPdfPages(file);
@@ -327,14 +290,14 @@ export default function ChatApp() {
       setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
-        id: currentChat.messages.length + 1,
+        id: currentSession.messages.length + 1,
         text: `📎 Uploaded ${file.name}`,
         sender: 'user',
         time: currentTime(),
         isFile: true,
       };
 
-      addMessageToChat(activeChat, fileMessage, `📎 ${file.name}`);
+      addMessageToChat(activeSession, fileMessage, `📎 ${file.name}`);
     } catch (err) {
       console.error('File upload failed:', err);
     }
@@ -353,12 +316,12 @@ export default function ChatApp() {
       )}
 
       <LeftSidebar
-        chats={chats}
-        activeChat={activeChat}
+        sessions={sessions}
+        activeSession={activeSession}
         isExpanded={leftSidebarExpanded}
         isVisible={showLeftSidebar}
-        onSelectChat={(id) => { setActiveChat(id); setShowLeftSidebar(false); }}
-        onNewChat={createNewChat}
+        onSelectSession={(id) => { setActiveSession(id); setShowLeftSidebar(false); }}
+        onNewSession={createNewSession}
         onExpand={() => setLeftSidebarExpanded(true)}
         onCollapse={() => {
           setLeftSidebarExpanded(false);
@@ -367,20 +330,16 @@ export default function ChatApp() {
       />
 
       <ChatArea
-        currentChat={currentChat}
+        currentSession={currentSession}
         input={input}
-        isRecording={isRecording}
-        recordingDuration={recordingDuration}
         isEditingName={isEditingName}
         editedName={editedName}
         onInputChange={setInput}
         onSend={handleSend}
         onKeyPress={handleKeyPress}
-        onStartRecording={startRecording}
-        onStopRecording={stopRecording}
         onFileUpload={handleFileUpload}
         onStartEditingName={startEditingName}
-        onSaveChatName={saveChatName}
+        onSaveSessionName={saveChatName}
         onCancelEditingName={() => setIsEditingName(false)}
         onEditedNameChange={setEditedName}
         onShowLeftSidebar={() => setShowLeftSidebar(true)}

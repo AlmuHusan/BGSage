@@ -2,26 +2,26 @@ import { Plus, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Chat } from '../types';
+import type { Session } from '../types';
 
 interface LeftSidebarProps {
-  chats: Chat[];
-  activeChat: number;
+  sessions: Session[];
+  activeSession: number;
   isExpanded: boolean;
   isVisible: boolean;
-  onSelectChat: (id: number) => void;
-  onNewChat: () => void;
+  onSelectSession: (id: number) => void;
+  onNewSession: () => void;
   onExpand: () => void;
   onCollapse: () => void;
 }
 
 export default function LeftSidebar({
-  chats,
-  activeChat,
+  sessions,
+  activeSession,
   isExpanded,
   isVisible,
-  onSelectChat,
-  onNewChat,
+  onSelectSession,
+  onNewSession,
   onExpand,
   onCollapse,
 }: LeftSidebarProps) {
@@ -37,7 +37,7 @@ export default function LeftSidebar({
           <>
             <h1 className="text-xl font-bold">Messages</h1>
             <div className="flex gap-2">
-              <Button onClick={onNewChat} size="icon" variant="default" title="New Chat">
+              <Button onClick={onNewSession} size="icon" variant="default" title="New session">
                 <Plus size={18} />
               </Button>
               <Button onClick={onCollapse} size="icon" variant="ghost" title="Collapse Sidebar">
@@ -52,34 +52,34 @@ export default function LeftSidebar({
         )}
       </div>
 
-      {/* Chat List */}
+      {/* session List */}
       <ScrollArea className="flex-1">
-        {chats.map((chat) => (
+        {sessions.map((session) => (
           <div
-            key={chat.id}
-            onClick={() => onSelectChat(chat.id)}
+            key={session.id}
+            onClick={() => onSelectSession(session.id)}
             className={`p-4 cursor-pointer border-b hover:bg-accent transition-colors ${
-              activeChat === chat.id ? 'bg-accent border-l-4 border-l-primary' : ''
+              activeSession === session.id ? 'bg-accent border-l-4 border-l-primary' : ''
             }`}
           >
             {isExpanded ? (
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold truncate">{chat.name}</h3>
-                    <span className="text-xs text-muted-foreground">{chat.time}</span>
+                    <h3 className="font-semibold truncate">{session.name}</h3>
+                    <span className="text-xs text-muted-foreground">{session.time}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
-                    {chat.unread > 0 && <Badge className="ml-2">{chat.unread}</Badge>}
+                    <p className="text-sm text-muted-foreground truncate">{session.lastMessage}</p>
+                    {session.unread > 0 && <Badge className="ml-2">{session.unread}</Badge>}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex justify-center relative">
-                {chat.unread > 0 && (
+                {session.unread > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {chat.unread}
+                    {session.unread}
                   </Badge>
                 )}
               </div>

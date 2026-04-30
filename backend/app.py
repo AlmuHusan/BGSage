@@ -73,7 +73,6 @@ def get_documents():
         )
         # print(data["result"]["hits"])
         resX = data["result"]["hits"]
-        print(resX)
         bookList=[]
         for r in resX:
             bookList.append(r["fields"]["source"])
