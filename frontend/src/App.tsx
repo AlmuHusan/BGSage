@@ -137,7 +137,16 @@ export default function ChatApp() {
     try {
       const sessionData = await apiFetchSessions();
       console.log(sessionData);
-      setDocuments(sessionData.map((name, index) => ({ id: index + 1, name, selected: false })));
+      setSessions(sessionData.map((name, index) => 
+        ({ 
+          id: index + 1, 
+          name:name, 
+          lastMessage: "false",
+          time:"",
+          unread:0,
+          messages:[]
+         }
+        )));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
     }
