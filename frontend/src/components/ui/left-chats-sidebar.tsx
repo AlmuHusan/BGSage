@@ -6,7 +6,7 @@ import type { Session } from '../types';
 
 interface LeftSidebarProps {
   sessions: Session[];
-  activeSession: number;
+  activeSession: number | null;
   isExpanded: boolean;
   isVisible: boolean;
   onSelectSession: (id: number) => void;

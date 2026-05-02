@@ -99,7 +99,7 @@ async function apiVectorSearch(queryString: string, filterDocuments?: string[]):
 export default function ChatApp() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
-  const [activeSession, setActiveSession] = useState(1);
+  const [activeSession, setActiveSession] = useState<number | null>(null);
   const [input, setInput] = useState('');
   const [leftSidebarExpanded, setLeftSidebarExpanded] = useState(true);
   const [rightSidebarExpanded, setRightSidebarExpanded] = useState(true);
@@ -109,7 +109,7 @@ export default function ChatApp() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  const currentSession = sessions.find((sessions) => sessions.id === activeSession);
+  const currentSession = sessions.find((s) => s.id === activeSession);
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -133,32 +133,31 @@ export default function ChatApp() {
 
   // ── Chat state helpers ───────────────────────────────────────────────────
 
-   async function retrieveSessions(): Promise<void> {
+  async function retrieveSessions(): Promise<void> {
     try {
       const sessionData = await apiFetchSessions();
-      console.log(sessionData);
-      setSessions(sessionData.map((name, index) => 
-        ({ 
-          id: index + 1, 
-          name:name, 
-          lastMessage: "false",
-          time:"",
-          unread:0,
-          messages:[]
-         }
-        )));
+      const mapped = sessionData.map((name, index) => ({
+        id: index+1,
+        name: name[1],
+        lastMessage: "Start a conversation..",
+        time: "",
+        unread: 0,
+        messages: [],
+      }));
+      setSessions(mapped);
+      if (mapped.length > 0) setActiveSession(mapped[0].id);
     } catch (err) {
-      console.error('Failed to retrieve documents:', err);
+      console.error('Failed to retrieve sessions:', err);
     }
   }
 
-  function updateChat(sessionId: number, updates: Partial<Session>): void {
+  function updateChat(sessionId: number | null, updates: Partial<Session>): void {
     setSessions((prev) =>
       prev.map((chat) => (chat.id === sessionId ? { ...chat, ...updates } : chat))
     );
   }
 
-  function addMessageToChat(sessionId: number, message: Message, lastMessage: string): void {
+  function addMessageToChat(sessionId: number | null, message: Message, lastMessage: string): void {
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
@@ -209,20 +208,21 @@ export default function ChatApp() {
 
   async function handleSend(): Promise<void> {
     const trimmed = input.trim();
-    if (!trimmed || !currentSession) return;
+    const session = sessions.find((s) => s.id === activeSession);
+    if (!trimmed || !session) return;
 
     const userMessage: Message = {
-      id: currentSession.messages.length + 1,
+      id: session.messages.length + 1,
       text: trimmed,
       sender: 'user',
       time: currentTime(),
     };
     const systemMessage: Message = {
-          id: currentSession.messages.length + 2,
-          text: "",
-          sender: 'system',
-          time: currentTime(),
-        };
+      id: session.messages.length + 2,
+      text: "",
+      sender: 'system',
+      time: currentTime(),
+    };
     addMessageToChat(activeSession, userMessage, trimmed);
     setInput('');
     console.log(trimmed);
@@ -258,10 +258,10 @@ export default function ChatApp() {
   // ── Chat management ──────────────────────────────────────────────────────
 
   function createNewSession(): void {
-    const newId = Math.max(...sessions.map((c) => c.id)) + 1;
+    const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
     const newChat: Session = {
       id: newId,
-      name: `New Chat ${newId}`,
+      name: `New Session ${newId}`,
       lastMessage: 'Start a conversation...',
       time: 'Now',
       unread: 0,
@@ -279,7 +279,7 @@ export default function ChatApp() {
   }
 
   function saveChatName(): void {
-    if (editedName.trim() && currentSession) {
+    if (editedName.trim()) {
       updateChat(activeSession, { name: editedName.trim() });
       setIsEditingName(false);
     }
@@ -290,7 +290,8 @@ export default function ChatApp() {
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
-    if (!file || !currentSession) return;
+    const session = sessions.find((s) => s.id === activeSession);
+    if (!file || !session) return;
 
     try {
       const pages = await extractPdfPages(file);
@@ -299,7 +300,7 @@ export default function ChatApp() {
       setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
-        id: currentSession.messages.length + 1,
+        id: session.messages.length + 1,
         text: `📎 Uploaded ${file.name}`,
         sender: 'user',
         time: currentTime(),
