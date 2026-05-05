@@ -53,7 +53,7 @@ async function apiFetchSessions(): Promise<string[]> {
   return res.json();
 }
 
-async function apiAskBGSage(query: string, context: string[]): Promise<string> {
+async function apiAskBGSage(query: string, context: string[],sid:number=1): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
@@ -61,7 +61,7 @@ async function apiAskBGSage(query: string, context: string[]): Promise<string> {
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query, context }),
+    body: JSON.stringify({ query, context, sid}),
   });
   return res.json();
 }

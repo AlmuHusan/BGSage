@@ -19,7 +19,12 @@ jobURL='https://'+url+'.cloud.databricks.com/api/2.2/jobs'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 embJobKey=os.environ.get("databricksEmbJobID")
-
+dbAPiBody = {
+            "warehouse_id": wid,
+            "catalog": "bgsage",
+            "schema": "default",
+            "statement": ""
+        }
 app = Flask(__name__)
 CORS(app, origins=['*'])
 client = Groq(
@@ -33,8 +38,17 @@ def askBGSage():
         print(request.json)
         query=request.json["query"]
         contextList=request.json["context"]
+        sid=request.json["sid"]
+
         print(str(contextList))
         print("DING")
+
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (user,{},\"{}\")".format( query, sid)
+        print(statement)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         chat_completion = client.chat.completions.create(
 
             messages=[
@@ -55,6 +69,12 @@ def askBGSage():
             model="llama-3.3-70b-versatile",
         )
         print(chat_completion)
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (system,{},\"{}\")".format(chat_completion.choices[0].message.content, sid)
+        print(statement)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         return jsonify(chat_completion.choices[0].message.content) , 200
     except Exception as e:
         print("Failed")
@@ -87,13 +107,8 @@ def get_books():
     try:
         statement = "SELECT sid,name from sessions where uid = 1"
         print(statement)
-        myobj = {
-            "warehouse_id": wid,
-            "catalog": "bgsage",
-            "schema": "default",
-            "statement": statement
-        }
-        x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
         print(resX)
         return jsonify(resX['result']["data_array"]) , 200
@@ -106,22 +121,16 @@ def get_books():
 def insertRows():
     try:
         print(request.json)
-        pages=request.json["pages"]
-        print("DING")
-        for p in range(len(pages)):
-            if pages[p]!='':
-                statement="INSERT into bgsage (text_content,page_number,document_source) VALUES (\"{}\",{},\"{}\")".format(str(pages[p]),p,request.json["document"])
-                print(statement)
-                myobj = {
-                    "warehouse_id": wid,
-                    "catalog": "bgsage",
-                    "schema": "default",
-                    "statement": statement
-                }
-                x = requests.post(url, json=myobj, headers={"Authorization": "Bearer " + apiKey})
-                resX = json.loads(x.text)
-                print(resX)
-        print(pages)
+        role=request.json["role"]
+        content=request.json["content"]
+        sid = request.json["sid"]
+        statement="INSERT into messages (chat_role,content,sid) VALUES (\"{}\",{},\"{}\")".format(role,content,sid)
+        print(statement)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
