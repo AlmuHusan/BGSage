@@ -43,7 +43,7 @@ def askBGSage():
         print(str(contextList))
         print("DING")
 
-        statement = "INSERT into messages (chat_role,content,sid) VALUES (user,{},\"{}\")".format( query, sid)
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (\"user\",\"{}\",\"{}\")".format( query, sid)
         print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
@@ -69,7 +69,7 @@ def askBGSage():
             model="llama-3.3-70b-versatile",
         )
         print(chat_completion)
-        statement = "INSERT into messages (chat_role,content,sid) VALUES (system,{},\"{}\")".format(chat_completion.choices[0].message.content, sid)
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (\"system\",\"{}\",\"{}\")".format(chat_completion.choices[0].message.content, sid)
         print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
