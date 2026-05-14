@@ -84,7 +84,7 @@ def askBGSage():
 @app.route('/documents', methods=['GET'])
 def get_documents():
     try:
-        statement = "SELECT did,name from documents where uid = 1"
+        statement = "SELECT name from documents where uid = 1"
         print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
