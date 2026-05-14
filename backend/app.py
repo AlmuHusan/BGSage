@@ -125,7 +125,6 @@ def insertRows():
         content=request.json["content"]
         sid = request.json["sid"]
         statement="INSERT into messages (chat_role,content,sid) VALUES (\"{}\",{},\"{}\")".format(role,content,sid)
-        print(statement)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
@@ -143,6 +142,11 @@ def insertDocument():
         print(request.json)
         pages=request.json["pages"]
         print("DING")
+        statement="INSERT into documents (name,uid) VALUES (\"{}\",{})".format(request.json["document"],1)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         data = []
         id=index.describe_namespace(namespace='__default__')
         print(id)
@@ -165,6 +169,11 @@ def insertDocument():
 def deleteDocument():
     try:
         print(request.json)
+        statement = "DELETE FROM documents WHERE name=\"{}\"".format(request.json["document"])
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         index.delete(
             filter={
                 "source": {"$eq": request.json["document"]}
