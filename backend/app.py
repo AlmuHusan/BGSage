@@ -84,14 +84,13 @@ def askBGSage():
 @app.route('/documents', methods=['GET'])
 def get_documents():
     try:
-        statement = "SELECT sid,name from sessions where uid = 1"
+        statement = "SELECT did,name from documents where uid = 1"
         print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
         print(resX)
-        bookList=list([])
-        return jsonify(bookList) , 200
+        return jsonify(resX['result']["data_array"]), 200
     except Exception as e:
         print("Failed")
         print(e)
