@@ -111,9 +111,14 @@ def get_sessions():
             dbAPiBody["statement"] = statement
             messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
             messageRes = json.loads(messageRes.text)
-            print(messageRes)
-
-        return jsonify(sessionRes['result']["data_array"]) , 200
+            print(messageRes['result']["data_array"])
+            sessionCollection.append({
+                "id": sessionRes['result']["data_array"][0],
+                "name": sessionRes['result']["data_array"][1],
+                "messages":messageRes['result']["data_array"]
+            })
+        print(sessionCollection)
+        return jsonify(sessionCollection , 200)
     except Exception as e:
         print("Failed")
         print(e)

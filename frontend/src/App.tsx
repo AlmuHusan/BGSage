@@ -45,7 +45,7 @@ async function apiFetchDocuments(): Promise<string[]> {
   return res.json();
 }
 
-async function apiFetchSessions(): Promise<string[]> {
+async function apiFetchSessions(): Promise<[]> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'GET',
     headers: API_HEADERS
@@ -135,8 +135,21 @@ export default function ChatApp() {
 
   async function retrieveSessions(): Promise<void> {
     try {
-      const sessionData = await apiFetchSessions();
-      const mapped = sessionData.map((name, index) => ({
+      const sessionRes = await apiFetchSessions();
+      console.log(sessionRes)
+      const sessionData : Session[]=[]
+      for(var session of sessionRes){
+        console.log(session)
+        sessionData.push({
+          id: session["id"],
+          name: session["name"],
+          lastMessage: session["messages"][length(session["messages"])-1],
+          time: "",
+          unread: 0,
+          messages: session["messages"],
+        })
+      }
+      const mapped = sessionRes.map((name, index) => ({
         id: index+1,
         name: name[1],
         lastMessage: "Start a conversation..",
