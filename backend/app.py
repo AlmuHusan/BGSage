@@ -101,10 +101,18 @@ def get_books():
         statement = "SELECT sid,name from sessions where uid = 1"
         print(statement)
         dbAPiBody["statement"]=statement
-        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
-        return jsonify(resX['result']["data_array"]) , 200
+        sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        sessionRes = json.loads(sessionRes.text)
+        print(sessionRes)
+        for s in sessionRes['result']["data_array"]:
+            statement = "SELECT  * from messages WHERE sid={}".format(s[0])
+            print(statement)
+            dbAPiBody["statement"] = statement
+            messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+            messageRes = json.loads(messageRes.text)
+            print(messageRes)
+
+        return jsonify(sessionRes['result']["data_array"]) , 200
     except Exception as e:
         print("Failed")
         print(e)
