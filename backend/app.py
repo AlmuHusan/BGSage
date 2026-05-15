@@ -96,8 +96,9 @@ def get_documents():
         print(e)
         return jsonify("Internal Server Error"),500
 @app.route('/sessions', methods=['GET'])
-def get_books():
+def get_sessions():
     try:
+        sessionCollection=[]
         statement = "SELECT sid,name from sessions where uid = 1"
         print(statement)
         dbAPiBody["statement"]=statement
@@ -105,7 +106,7 @@ def get_books():
         sessionRes = json.loads(sessionRes.text)
         print(sessionRes)
         for s in sessionRes['result']["data_array"]:
-            statement = "SELECT  * from messages WHERE sid={}".format(s[0])
+            statement = "SELECT (mid,chat_role,content) from messages WHERE sid={} ORDER BY mid".format(s[0])
             print(statement)
             dbAPiBody["statement"] = statement
             messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
