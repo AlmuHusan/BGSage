@@ -106,6 +106,8 @@ def get_sessions():
         sessionRes = json.loads(sessionRes.text)
         print(sessionRes)
         for s in sessionRes['result']["data_array"]:
+            print("S")
+            print(s)
             statement = "SELECT (mid,chat_role,content) from messages WHERE sid={} ORDER BY mid".format(s[0])
             print(statement)
             dbAPiBody["statement"] = statement
