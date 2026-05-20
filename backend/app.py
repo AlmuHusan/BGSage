@@ -116,6 +116,7 @@ def get_sessions():
             print(messageRes['result']["data_array"])
             messageData=[]
             for m in messageRes['result']["data_array"]:
+                print(m)
                 messageData.append(json.loads(m))
             sessionCollection.append({
                 "id": int(s[0]),
