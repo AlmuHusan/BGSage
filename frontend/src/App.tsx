@@ -138,12 +138,12 @@ export default function ChatApp() {
       const sessionRes = await apiFetchSessions();
       console.log(sessionRes)
       const sessionData : Session[]=[]
-      for(var session of sessionRes){
+      for(var session of sessionRes as Session[]){
         console.log(session)
         sessionData.push({
           id: session["id"],
           name: session["name"],
-          lastMessage: session["messages"][length(session["messages"])-1],
+          lastMessage: session["messages"].at(-1)!.text,
           time: "",
           unread: 0,
           messages: session["messages"],

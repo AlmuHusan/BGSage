@@ -115,9 +115,9 @@ def get_sessions():
             messageRes = json.loads(messageRes.text)
             print(messageRes['result']["data_array"])
             sessionCollection.append({
-                "id": s[0],
+                "id": int(s[0]),
                 "name": s[1],
-                "messages":messageRes['result']["data_array"]
+                "messages":json.loads(messageRes['result']["data_array"])
             })
         print(sessionCollection)
         return jsonify(sessionCollection , 200)
