@@ -114,10 +114,13 @@ def get_sessions():
             messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
             messageRes = json.loads(messageRes.text)
             print(messageRes['result']["data_array"])
+            messageData=[]
+            for m in messageRes['result']["data_array"]:
+                messageData.append(json.loads(m))
             sessionCollection.append({
                 "id": int(s[0]),
                 "name": s[1],
-                "messages":json.loads(messageRes['result']["data_array"])
+                "messages":messageData
             })
         print(sessionCollection)
         return jsonify(sessionCollection , 200)
