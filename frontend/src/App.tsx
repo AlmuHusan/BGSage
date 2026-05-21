@@ -135,30 +135,27 @@ export default function ChatApp() {
 
   async function retrieveSessions(): Promise<void> {
     try {
-      const sessionRes = await apiFetchSessions();
-      console.log(sessionRes)
-      const sessionData : Session[]=[]
-      for(var session of sessionRes as Session[]){
+      let sessionRes = await apiFetchSessions();
+      console.log(sessionRes);
+      let sessionResData:Session[]=sessionRes?.at(0) ?? [];
+      console.log(sessionResData)
+      let sessionData : Session[]=[]
+      for(let i =0;i<sessionResData.length;i++ ){
+        let session:Session=sessionResData[i]
         console.log(session)
         sessionData.push({
           id: session["id"],
           name: session["name"],
-          lastMessage: session["messages"].at(-1)!.text,
+          last_message: session["messages"].at(-1)!["content"],
           time: "",
           unread: 0,
           messages: session["messages"],
-        })
+        });
+        console.log(sessionData)
       }
-      const mapped = sessionRes.map((name, index) => ({
-        id: index+1,
-        name: name[1],
-        lastMessage: "Start a conversation..",
-        time: "",
-        unread: 0,
-        messages: [],
-      }));
-      setSessions(mapped);
-      if (mapped.length > 0) setActiveSession(mapped[0].id);
+
+      setSessions(sessionData);
+      if (sessionData.length > 0) setActiveSession(sessionData[0].id);
     } catch (err) {
       console.error('Failed to retrieve sessions:', err);
     }
@@ -225,15 +222,15 @@ export default function ChatApp() {
     if (!trimmed || !session) return;
 
     const userMessage: Message = {
-      id: session.messages.length + 1,
-      text: trimmed,
-      sender: 'user',
+      mid: session.messages.length + 1,
+      content: trimmed,
+      chat_role: 'user',
       time: currentTime(),
     };
     const systemMessage: Message = {
-      id: session.messages.length + 2,
-      text: "",
-      sender: 'system',
+      mid: session.messages.length + 2,
+      content: "",
+      chat_role: 'system',
       time: currentTime(),
     };
     addMessageToChat(activeSession, userMessage, trimmed);
@@ -249,13 +246,13 @@ export default function ChatApp() {
 
         const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
         systemMessage.time=currentTime()
-        systemMessage.text=resAskBGSage
+        systemMessage.content=resAskBGSage
       }
       else{
         systemMessage.time=currentTime()
-        systemMessage.text="No Documents selected/uploaded"
+        systemMessage.content="No Documents selected/uploaded"
       }
-      addMessageToChat(activeSession, systemMessage, systemMessage.text);
+      addMessageToChat(activeSession, systemMessage, systemMessage.content);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -275,7 +272,7 @@ export default function ChatApp() {
     const newChat: Session = {
       id: newId,
       name: `New Session ${newId}`,
-      lastMessage: 'Start a conversation...',
+      last_message: 'Start a conversation...',
       time: 'Now',
       unread: 0,
       messages: [],
@@ -313,11 +310,11 @@ export default function ChatApp() {
       setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
-        id: session.messages.length + 1,
-        text: `📎 Uploaded ${file.name}`,
-        sender: 'user',
+        mid: session.messages.length + 1,
+        content: `📎 Uploaded ${file.name}`,
+        chat_role: 'user',
         time: currentTime(),
-        isFile: true,
+        is_file: true,
       };
 
       addMessageToChat(activeSession, fileMessage, `📎 ${file.name}`);
