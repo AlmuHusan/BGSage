@@ -99,6 +99,7 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
 }
 
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
+  console.log(filterDocuments)
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -308,8 +309,9 @@ export default function ChatApp() {
   async function saveChatName(): Promise<void> {
     if (editedName.trim()) {
       updateChat(activeSession, { name: editedName.trim() });
-      await apiUpdateSession(editedName.trim(),activeSession!)
       setIsEditingName(false);
+      await apiUpdateSession(editedName.trim(),activeSession!)
+      
     }
   }
 
