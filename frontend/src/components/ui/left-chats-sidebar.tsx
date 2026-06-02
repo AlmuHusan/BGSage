@@ -70,7 +70,7 @@ export default function LeftSidebar({
                     <span className="text-xs text-muted-foreground">{session.time}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground truncate">{session.lastMessage}</p>
+                    <p className="text-sm text-muted-foreground truncate">{session.last_message}</p>
                     {session.unread > 0 && <Badge className="ml-2">{session.unread}</Badge>}
                   </div>
                 </div>

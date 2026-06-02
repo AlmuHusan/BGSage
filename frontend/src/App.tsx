@@ -45,6 +45,15 @@ async function apiFetchDocuments(): Promise<string[]> {
   return res.json();
 }
 
+
+async function apiCreateSession(name:string): Promise<[]> {
+  const res = await fetch(`${API_BASE}/createSession`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({name}),
+  });
+  return res.json();
+}
 async function apiFetchSessions(): Promise<[]> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'GET',
@@ -52,7 +61,14 @@ async function apiFetchSessions(): Promise<[]> {
   });
   return res.json();
 }
-
+async function apiUpdateSession(name:string,sid:number): Promise<[]> {
+  const res = await fetch(`${API_BASE}/updateSessionName`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({name,sid}),
+  });
+  return res.json();
+}
 async function apiAskBGSage(query: string, context: string[],sid:number=1): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
@@ -267,7 +283,7 @@ export default function ChatApp() {
 
   // ── Chat management ──────────────────────────────────────────────────────
 
-  function createNewSession(): void {
+  async function createNewSession(): Promise<void>  {
     const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
     const newChat: Session = {
       id: newId,
@@ -277,6 +293,7 @@ export default function ChatApp() {
       unread: 0,
       messages: [],
     };
+    await apiCreateSession("New Session ${newId}")
     setSessions((prev) => [newChat, ...prev]);
     setActiveSession(newId);
   }
@@ -288,9 +305,10 @@ export default function ChatApp() {
     }
   }
 
-  function saveChatName(): void {
+  async function saveChatName(): Promise<void> {
     if (editedName.trim()) {
       updateChat(activeSession, { name: editedName.trim() });
+      await apiUpdateSession(editedName.trim(),activeSession!)
       setIsEditingName(false);
     }
   }

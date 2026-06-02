@@ -31,7 +31,7 @@ client = Groq(
     api_key=os.environ.get("llmAPIKey"),
 )
 
-#Ask the LLM a question
+
 @app.route('/askBGSage', methods=['POST'])
 def askBGSage():
     try:
@@ -80,7 +80,7 @@ def askBGSage():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Get a list of all books uploaded
+
 @app.route('/documents', methods=['GET'])
 def get_documents():
     try:
@@ -129,7 +129,40 @@ def get_sessions():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Insert data from a new book
+
+@app.route('/createSession', methods=['POST'])
+def insertRows():
+    try:
+        print(request.json)
+        name=request.json["name"]
+        statement="INSERT into sessions (uid,name) VALUES (1,\"{}\")".format(name)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/updateSessionName', methods=['POST'])
+def insertRows():
+    try:
+        print(request.json)
+        name=request.json["name"]
+        sid = request.json["sid"]
+        statement="UPDATE sessions SET name =\"{}\" WHERE sid = {}".format(name,sid)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 @app.route('/updateSession', methods=['POST'])
 def insertRows():
     try:
@@ -148,7 +181,7 @@ def insertRows():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Insert data from a new book
+
 @app.route('/insertDocument', methods=['POST'])
 def insertDocument():
     try:
@@ -198,7 +231,7 @@ def deleteDocument():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Search for relevant passages
+
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
     try:
@@ -211,7 +244,6 @@ async def vectorSearch():
                 "filter":{"source":{"$in":request.json["filterDocuments"]}}
             }
         )
-        # print(data["result"]["hits"])
         resX = data["result"]["hits"]
         print(resX)
         results = []
