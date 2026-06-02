@@ -130,7 +130,7 @@ def getSessions():
     except Exception as e:
         print("Failed")
         print(e)
-        return jsonify("Internal Server Error"),500
+        return jsonify([],"Internal Server Error"),500
 
 @app.route('/createSession', methods=['POST'])
 def createSession():
