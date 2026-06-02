@@ -82,7 +82,7 @@ def askBGSage():
         return jsonify("Internal Server Error"),500
 
 @app.route('/documents', methods=['GET'])
-def get_documents():
+def getDocuments():
     try:
         statement = "SELECT name from documents where uid = 1"
         print(statement)
@@ -96,7 +96,7 @@ def get_documents():
         print(e)
         return jsonify("Internal Server Error"),500
 @app.route('/sessions', methods=['GET'])
-def get_sessions():
+def getSessions():
     try:
         sessionCollection=[]
         statement = "SELECT sid,name from sessions where uid = 1"
@@ -131,7 +131,7 @@ def get_sessions():
         return jsonify("Internal Server Error"),500
 
 @app.route('/createSession', methods=['POST'])
-def insertRows():
+def createSession():
     try:
         print(request.json)
         name=request.json["name"]
@@ -147,7 +147,7 @@ def insertRows():
         print(e)
         return jsonify("Internal Server Error"),500
 @app.route('/updateSessionName', methods=['POST'])
-def insertRows():
+def updateSessionName():
     try:
         print(request.json)
         name=request.json["name"]
@@ -164,7 +164,7 @@ def insertRows():
         print(e)
         return jsonify("Internal Server Error"),500
 @app.route('/updateSession', methods=['POST'])
-def insertRows():
+def updateSession():
     try:
         print(request.json)
         role=request.json["role"]
