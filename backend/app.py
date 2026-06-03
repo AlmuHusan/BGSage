@@ -130,7 +130,7 @@ def getSessions():
     except Exception as e:
         print("Failed")
         print(e)
-        return jsonify([]),500
+        return jsonify(sessionCollection),500
 
 @app.route('/createSession', methods=['POST'])
 def createSession():
