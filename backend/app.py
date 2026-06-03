@@ -124,6 +124,12 @@ def getSessions():
                     "name": s[1],
                     "messages":messageData
                 })
+            else:
+                sessionCollection.append({
+                    "id": int(s[0]),
+                    "name": s[1],
+                    "messages": []
+                })
         print(sessionCollection)
         return jsonify(sessionCollection , 200)
     except Exception as e:
