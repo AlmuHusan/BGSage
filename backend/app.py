@@ -115,16 +115,15 @@ def getSessions():
             messageRes = json.loads(messageRes.text)
             print(messageRes['result'])
             messageData=[]
-            if(messageRes['result']=="Failed"):
-                return jsonify(sessionCollection , 500)
-            for m in messageRes['result']["data_array"]:
-                print(m)
-                messageData.append(json.loads(m[0]))
-            sessionCollection.append({
-                "id": int(s[0]),
-                "name": s[1],
-                "messages":messageData
-            })
+            if(messageRes['result']!= {}):
+                for m in messageRes['result']["data_array"]:
+                    print(m)
+                    messageData.append(json.loads(m[0]))
+                sessionCollection.append({
+                    "id": int(s[0]),
+                    "name": s[1],
+                    "messages":messageData
+                })
         print(sessionCollection)
         return jsonify(sessionCollection , 200)
     except Exception as e:
