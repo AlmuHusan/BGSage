@@ -161,7 +161,7 @@ export default function ChatApp() {
         let session:Session=sessionResData[i]
         console.log(session)
         let lMessage=""
-        if(session["messages"]){
+        if(session["messages"].length>0){
           lMessage=session["messages"].at(-1)!["content"]
         }
         sessionData.push({
