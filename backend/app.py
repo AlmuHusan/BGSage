@@ -110,7 +110,7 @@ def deleteDocument():
             },
             namespace="__default__"
         )
-        statement = "DELETE from documents WHERE name = {}".format(request.json["document"])
+        statement = "DELETE from documents WHERE name = {} AND uid=1".format(request.json["document"][0])
         print(statement)
         dbAPiBody["statement"] = statement
         sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
