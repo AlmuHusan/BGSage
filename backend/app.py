@@ -106,7 +106,7 @@ def deleteDocument():
         print(resX)
         index.delete(
             filter={
-                "source": {"$eq": request.json["document"]}
+                "source": {"$eq": request.json["document"][0]}
             },
             namespace="__default__"
         )
