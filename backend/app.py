@@ -66,7 +66,7 @@ def askBGSage():
                     "content": str(contextList)+" "+query,
                 }
             ],
-            model="openai/gpt-oss-20b",
+            model="openai/gpt-oss-120b",
         )
         print(chat_completion)
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
