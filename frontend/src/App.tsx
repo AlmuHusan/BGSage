@@ -1,4 +1,4 @@
-import { useState, useEffect, Activity } from 'react';
+import { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { Session, Message, Document } from './components/types';
@@ -69,6 +69,13 @@ async function apiUpdateSession(name:string,sid:number): Promise<[]> {
   });
   return res.json();
 }
+async function apiDeleteSession(sid: number): Promise<void> {
+  await fetch(`${API_BASE}/deleteSession`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ sid }),
+  });
+}
 async function apiAskBGSage(query: string, context: string[],sid:number): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
@@ -98,13 +105,7 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
   });
 }
 
-async function apiDeleteSession(sid: number): Promise<void> {
-  await fetch(`${API_BASE}/deleteSession`, {
-    method: 'POST',
-    headers: API_HEADERS,
-    body: JSON.stringify({ sid }),
-  });
-}
+
 
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
   console.log(filterDocuments)
@@ -365,6 +366,7 @@ export default function ChatApp() {
         mid: session.messages.length + 1,
         content: `📎 Uploaded ${file.name}`,
         chat_role: 'user',
+        sid:session.id,
         time: currentTime(),
         is_file: true,
       };

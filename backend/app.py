@@ -95,6 +95,32 @@ def getDocuments():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
+@app.route('/deleteDocument', methods=['POST'])
+def deleteDocument():
+    try:
+        print(request.json)
+        statement = "DELETE FROM documents WHERE name=\"{}\"".format(request.json["document"])
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        index.delete(
+            filter={
+                "source": {"$eq": request.json["document"]}
+            },
+            namespace="__default__"
+        )
+        statement = "DELETE from documents WHERE name = {}".format(request.json["document"])
+        print(statement)
+        dbAPiBody["statement"] = statement
+        sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        sessionRes = json.loads(sessionRes.text)
+        print(sessionRes)
+        return jsonify("Document deleted!") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 @app.route('/sessions', methods=['GET'])
 def getSessions():
     try:
@@ -170,6 +196,26 @@ def updateSessionName():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
+@app.route('/deleteSession', methods=['POST'])
+def deleteSession():
+    try:
+        print(request.json)
+        sid = request.json["sid"]
+        statement="DELETE from sessions WHERE sid = {}".format(sid)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        statement = "DELETE from messages WHERE sid = {}".format(sid)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        return jsonify("Delete Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
 @app.route('/updateSession', methods=['POST'])
 def updateSession():
     try:
@@ -218,26 +264,7 @@ def insertDocument():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-@app.route('/deleteDocument', methods=['POST'])
-def deleteDocument():
-    try:
-        print(request.json)
-        statement = "DELETE FROM documents WHERE name=\"{}\"".format(request.json["document"])
-        dbAPiBody["statement"] = statement
-        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
-        index.delete(
-            filter={
-                "source": {"$eq": request.json["document"]}
-            },
-            namespace="__default__"
-        )
-        return jsonify("Document deleted!") , 200
-    except Exception as e:
-        print("Failed")
-        print(e)
-        return jsonify("Internal Server Error"),500
+
 
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
