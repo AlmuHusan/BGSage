@@ -98,6 +98,14 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
   });
 }
 
+async function apiDeleteSession(sid: number): Promise<void> {
+  await fetch(`${API_BASE}/deleteSession`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ sid }),
+  });
+}
+
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
   console.log(filterDocuments)
   const res = await fetch(`${API_BASE}/vectorSearch`, {
@@ -216,6 +224,19 @@ export default function ChatApp() {
       setDocuments((prev) => prev.filter((doc) => doc.id !== oldDoc.id));
     } catch (err) {
       console.error('Failed to delete document:', err);
+    }
+  }
+
+  async function deleteSession(session: Session): Promise<void> {
+    try {
+      await apiDeleteSession(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+      if (activeSession === session.id) {
+        const remaining = sessions.filter((s) => s.id !== session.id);
+        setActiveSession(remaining.length > 0 ? remaining[0].id : null);
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err);
     }
   }
 
@@ -378,6 +399,7 @@ export default function ChatApp() {
           setLeftSidebarExpanded(false);
           if (window.innerWidth < 768) setShowLeftSidebar(false);
         }}
+        onDeleteSession={deleteSession}
       />
 
       <ChatArea

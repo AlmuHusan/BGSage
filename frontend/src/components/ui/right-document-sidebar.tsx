@@ -25,25 +25,24 @@ export default function RightSidebar({
   onDelete,
   onUpload,
 }: RightSidebarProps) {
-
   return (
     <div
-      className={`bg-card border-l transition-all duration-300 ease-in-out flex flex-col z-50 ${
-        isVisible ? 'fixed right-0 top-0 bottom-0 w-80' : 'hidden'
-      } md:flex md:relative ${isExpanded ? 'md:w-80' : 'md:w-12'}`}
+      className={`bg-card border-l transition-all duration-300 ease-in-out flex flex-col z-50 overflow-hidden ${
+        isVisible ? 'fixed right-0 top-0 bottom-0 w-72' : 'hidden'
+      } md:flex md:relative ${isExpanded ? 'md:w-72' : 'md:w-12'}`}
     >
       {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="px-3 py-3 border-b flex items-center justify-between">
         {isExpanded ? (
           <>
-            <Button onClick={onCollapse} size="icon" variant="ghost" title="Collapse Sidebar">
-              <ChevronRight size={18} />
+            <Button onClick={onCollapse} size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" title="Collapse Sidebar">
+              <ChevronRight size={16} />
             </Button>
-            <h2 className="text-xl font-bold flex-1 text-center">Documents</h2>
+            <h2 className="text-lg font-bold flex-1 text-center">Documents</h2>
           </>
         ) : (
-          <Button onClick={onExpand} size="icon" variant="ghost" className="mx-auto" title="Expand Sidebar">
-            <ChevronLeft size={18} />
+          <Button onClick={onExpand} size="icon" variant="ghost" className="mx-auto h-8 w-8" title="Expand Sidebar">
+            <ChevronLeft size={16} />
           </Button>
         )}
       </div>
@@ -52,52 +51,42 @@ export default function RightSidebar({
       {isExpanded && (
         <>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
+            <div className="px-3 py-3 space-y-2">
               {documents.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
-                  <FileText size={48} className="mx-auto mb-2 opacity-50" />
+                  <FileText size={40} className="mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No documents uploaded</p>
                 </div>
               ) : (
-                <>
-
-
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="p-3 rounded-lg transition-colors bg-accent/80 hover:bg-primary/10"
+                documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center  px-2 py-2 rounded-lg bg-accent/80 hover:bg-primary/10 transition-colors"
+                  >
+                    <Checkbox
+                      id={`doc-${doc.id}`}
+                      checked={doc.selected}
+                      onCheckedChange={() => onToggleDoc(doc.id)}
+                      className="flex-shrink-0"
+                    />
+                    <FileText size={18} className="flex-shrink-0 text-primary" />
+                    <span className="flex-1 min-w-0 text-xs font-medium truncate">{doc.name}</span>
+                    <Button
+                      onClick={() => onDelete(doc)}
+                      size="icon"
+                      variant="ghost"
+                      className="flex-shrink-0 h-7 w-7 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                      title="Delete document"
                     >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id={`doc-${doc.id}`}
-                          checked={doc.selected}
-                          onCheckedChange={() => onToggleDoc(doc.id)}
-                          className="flex-shrink-0"
-                        />
-                        <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
-                          <FileText size={20} className="text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{doc.name}</h4>
-                        </div>
-                        <Button
-                          onClick={() => onDelete(doc)}
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 flex-shrink-0 hover:bg-destructive hover:text-destructive-foreground"
-                          title="Delete document"
-                        >
-                          <X size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </>
+                      <X size={13} />
+                    </Button>
+                  </div>
+                ))
               )}
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t">
+          <div className="px-3 py-3 border-t">
             <input
               type="file"
               id="sidebar-file-upload"
@@ -109,7 +98,7 @@ export default function RightSidebar({
               className="w-full"
               variant="default"
             >
-              <Upload size={18} className="mr-2" />
+              <Upload size={16} className="mr-2" />
               Upload Document
             </Button>
           </div>
