@@ -1,5 +1,6 @@
 export interface Message {
   mid: number;
+  sid: number;
   content: string;
   chat_role: 'user' | 'system';
   time: string;

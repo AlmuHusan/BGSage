@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Activity } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { Session, Message, Document } from './components/types';
@@ -69,7 +69,7 @@ async function apiUpdateSession(name:string,sid:number): Promise<[]> {
   });
   return res.json();
 }
-async function apiAskBGSage(query: string, context: string[],sid:number=1): Promise<string> {
+async function apiAskBGSage(query: string, context: string[],sid:number): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
@@ -232,7 +232,7 @@ export default function ChatApp() {
 
     if (selectedDocs.length === 0) return [];
 
-    return selectedDocs.map((doc) => doc.name);
+    return selectedDocs.map((doc) => doc.name[0]);
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
@@ -246,12 +246,14 @@ export default function ChatApp() {
       mid: session.messages.length + 1,
       content: trimmed,
       chat_role: 'user',
+      sid:activeSession!,
       time: currentTime(),
     };
     const systemMessage: Message = {
       mid: session.messages.length + 2,
       content: "",
       chat_role: 'system',
+      sid:activeSession!,
       time: currentTime(),
     };
     addMessageToChat(activeSession, userMessage, trimmed);
@@ -265,9 +267,14 @@ export default function ChatApp() {
         const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
         console.log(resVectorSearch);
 
-        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage
+        let lastSession=sessions
+        console.log(sessions)
+        console.log(activeSession)
+        lastSession[activeSession!-1].last_message=resAskBGSage
+        setSessions(lastSession)
       }
       else{
         systemMessage.time=currentTime()
