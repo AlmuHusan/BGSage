@@ -66,7 +66,7 @@ def askBGSage():
                     "content": str(contextList)+" "+query,
                 }
             ],
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
         )
         print(chat_completion)
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
@@ -99,11 +99,6 @@ def getDocuments():
 def deleteDocument():
     try:
         print(request.json)
-        statement = "DELETE FROM documents WHERE name=\"{}\"".format(request.json["document"])
-        dbAPiBody["statement"] = statement
-        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
         index.delete(
             filter={
                 "source": {"$eq": request.json["document"][0]}

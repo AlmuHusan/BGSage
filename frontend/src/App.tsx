@@ -294,8 +294,8 @@ export default function ChatApp() {
         systemMessage.content=resAskBGSage
         let lastSession=sessions
         console.log(sessions)
-        console.log(activeSession)
-        lastSession[activeSession!-1].last_message=resAskBGSage
+        console.log(session)
+        session.last_message=resAskBGSage
         setSessions(lastSession)
       }
       else{
