@@ -42,9 +42,10 @@ def askBGSage():
         sid=request.json["sid"]
         messages=[]
         for m in messageHistory:
+            print(m)
             messages.append({
-                "role":m.chat_role,
-                "content":m.content
+                "role":m["chat_role"],
+                "content":m["content"]
             })
         messages.append([
             {
