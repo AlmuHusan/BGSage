@@ -3,5 +3,4 @@ flask-cors
 Gunicorn
 requests
 groq
-aiohttp
 pinecone==8.1.2

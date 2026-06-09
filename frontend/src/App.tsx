@@ -77,7 +77,6 @@ async function apiDeleteSession(sid: number): Promise<void> {
   });
 }
 async function apiAskBGSage(query: string, context: string[],messages:Message[],sid:number): Promise<string> {
-  console.log(context)
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
@@ -109,7 +108,6 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
 
 
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
-  console.log(filterDocuments)
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -163,13 +161,10 @@ export default function ChatApp() {
   async function retrieveSessions(): Promise<void> {
     try {
       let sessionRes = await apiFetchSessions();
-      console.log(sessionRes);
       let sessionResData:Session[]=sessionRes?.at(0) ?? [];
-      console.log(sessionResData)
       let sessionData : Session[]=[]
       for(let i =0;i<sessionResData.length;i++ ){
         let session:Session=sessionResData[i]
-        console.log(session)
         let lMessage=""
         if(session["messages"].length>0){
           lMessage=session["messages"].at(-1)!["content"]
@@ -182,7 +177,6 @@ export default function ChatApp() {
           unread: 0,
           messages: session["messages"],
         });
-        console.log(sessionData)
       }
 
       setSessions(sessionData);
@@ -213,7 +207,6 @@ export default function ChatApp() {
   async function retrieveDocuments(): Promise<void> {
     try {
       const bookData = await apiFetchDocuments();
-      console.log(bookData);
       setDocuments(bookData.map((name, index) => ({ id: index + 1, name, selected: false })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
@@ -281,14 +274,11 @@ export default function ChatApp() {
     };
     addMessageToChat(activeSession, userMessage, trimmed);
     setInput('');
-    console.log(trimmed);
 
     try {
       const filterDocuments = getFilterDocuments();
-      console.log('Filtering by documents:',filterDocuments);
       if(filterDocuments && filterDocuments.length > 0 ){
         const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
-        console.log(resVectorSearch);
         const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,currentSession?.messages!,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage

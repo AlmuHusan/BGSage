@@ -5,9 +5,7 @@ from groq import Groq
 import requests
 import os
 import json
-import time
-import aiohttp
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone
 pineconeAPIKey=os.environ.get("PINECONE_API_KEY")
 pineconeIndexName = os.environ.get("PINECONE_API_ENV")
 pc = Pinecone(api_key=pineconeAPIKey)
@@ -39,11 +37,9 @@ def askBGSage():
         query=request.json["query"]
         contextList=request.json["context"]
         messageHistory = request.json["messageHistory"]
-        print(messageHistory)
         sid=request.json["sid"]
         messages=[]
         for m in messageHistory:
-            print(m)
             messages.extend([{
                 "role":m["chat_role"],
                 "content":m["content"]
@@ -64,28 +60,17 @@ def askBGSage():
             }
             ]
         )
-
-        print(str(contextList))
-        print("DING")
-
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"user\",\"{}\",{})".format( query, sid)
-        print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
-        print(messages)
         chat_completion = client.chat.completions.create(
             messages=messages,
             model="openai/gpt-oss-120b",
         )
-        print(chat_completion)
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
-        print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
+        #resX = json.loads(x.text)
         return jsonify(chat_completion.choices[0].message.content) , 200
     except Exception as e:
         print("Failed")
@@ -95,12 +80,11 @@ def askBGSage():
 @app.route('/documents', methods=['GET'])
 def getDocuments():
     try:
+        print(request.json)
         statement = "SELECT name from documents where uid = 1"
-        print(statement)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
-        print(resX)
         return jsonify(resX['result']["data_array"]), 200
     except Exception as e:
         print("Failed")
@@ -117,11 +101,9 @@ def deleteDocument():
             namespace="__default__"
         )
         statement = "DELETE from documents WHERE name = \"{}\" AND uid=1".format(request.json["document"][0])
-        print(statement)
         dbAPiBody["statement"] = statement
         sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         sessionRes = json.loads(sessionRes.text)
-        print(sessionRes)
         return jsonify("Document deleted!") , 200
     except Exception as e:
         print("Failed")
@@ -130,26 +112,20 @@ def deleteDocument():
 @app.route('/sessions', methods=['GET'])
 def getSessions():
     try:
+        print(request.json)
         sessionCollection=[]
         statement = "SELECT sid,name from sessions where uid = 1"
-        print(statement)
         dbAPiBody["statement"]=statement
         sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         sessionRes = json.loads(sessionRes.text)
-        print(sessionRes)
         for s in sessionRes['result']["data_array"]:
-            print("S")
-            print(s)
             statement = "SELECT (mid,chat_role,content) from messages WHERE sid={} ORDER BY mid".format(s[0])
-            print(statement)
             dbAPiBody["statement"] = statement
             messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
             messageRes = json.loads(messageRes.text)
-            print(messageRes['result'])
             messageData=[]
             if(messageRes['result']!= {}):
                 for m in messageRes['result']["data_array"]:
-                    print(m)
                     messageData.append(json.loads(m[0]))
                 sessionCollection.append({
                     "id": int(s[0]),
@@ -162,7 +138,6 @@ def getSessions():
                     "name": s[1],
                     "messages": []
                 })
-        print(sessionCollection)
         return jsonify(sessionCollection , 200)
     except Exception as e:
         print("Failed")
@@ -178,8 +153,6 @@ def createSession():
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
-        print(resX)
-
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
@@ -194,9 +167,6 @@ def updateSessionName():
         statement="UPDATE sessions SET name =\"{}\" WHERE sid = {}".format(name,sid)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
-
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
@@ -210,13 +180,9 @@ def deleteSession():
         statement="DELETE from sessions WHERE sid = {}".format(sid)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
         statement = "DELETE from messages WHERE sid = {}".format(sid)
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
         return jsonify("Delete Successfull") , 200
     except Exception as e:
         print("Failed")
@@ -232,9 +198,6 @@ def updateSession():
         statement="INSERT into messages (chat_role,content,sid) VALUES (\"{}\",{},\"{}\")".format(role,content,sid)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        print(resX)
-
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
@@ -246,25 +209,18 @@ def insertDocument():
     try:
         print(request.json)
         pages=request.json["pages"]
-        print("DING")
         statement="INSERT into documents (name,uid) VALUES (\"{}\",{})".format(request.json["document"],1)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
-        print(resX)
         data = []
         id=index.describe_namespace(namespace='__default__')
-        print(id)
         id=int(id["record_count"])+101
-        print(id)
         for p in range(len(pages)):
             if pages[p]!='':
                 data.append({"id":str(id),"text":str(pages[p]),"pageNumber":p,"source":request.json["document"]})
                 id=id+1
-
-
         index.upsert_records(namespace="__default__",records=data)
-        print(pages)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")
@@ -285,7 +241,6 @@ async def vectorSearch():
             }
         )
         resX = data["result"]["hits"]
-        print(resX)
         results = []
         for r in resX:
             fieldData=r["fields"]
