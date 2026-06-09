@@ -81,7 +81,7 @@ async function apiAskBGSage(query: string, context: string[],messages:Message[],
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
-  let messageHistory=messages.slice(-5)
+  let messageHistory=messages.slice(-6)
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -292,11 +292,9 @@ export default function ChatApp() {
         const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,currentSession?.messages!,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage
-        let lastSession=sessions
         console.log(sessions)
         console.log(session)
         session.last_message=resAskBGSage
-        setSessions(lastSession)
       }
       else{
         systemMessage.time=currentTime()
