@@ -38,7 +38,29 @@ def askBGSage():
         print(request.json)
         query=request.json["query"]
         contextList=request.json["context"]
+        messageHistory = request.json["messageHistory"]
         sid=request.json["sid"]
+        messages=[]
+        for m in messageHistory:
+            messages.append({
+                "role":m.chat_role,
+                "content":m.content
+            })
+        messages.append([
+            {
+                "role": "system",
+                "content": """You are a board game expert with the task of helping people learn board games.
+                            You will be provided a collection of context that is based on the board game rules the user is playing.
+                             Please help them and provide the sources and page numbers of where you are getting your information
+                            from at the end of your statement in order of page number. For example if your sources are
+                            rulebook_A pages 4,1,2 and rulebook_B pages 66, 21, 42 Then the output at the end of the output
+                            should be Sources: rulebook_A Pages: 1,2,4 rulebook_B 21,42,66"""
+            },
+            {
+                "role": "user",
+                "content": str(contextList) + " " + query,
+            }
+        ])
 
         print(str(contextList))
         print("DING")
@@ -49,23 +71,9 @@ def askBGSage():
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
         print(resX)
+        print(messages)
         chat_completion = client.chat.completions.create(
-
-            messages=[
-                {
-                    "role": "system",
-                    "content": """You are a board game expert with the task of helping people learn board games.
-                    You will be provided a collection of context that is based on the board game rules the user is playing.
-                     Please help them and provide the sources and page numbers of where you are getting your information
-                    from at the end of your statement in order of page number. For example if your sources are
-                    rulebook_A pages 4,1,2 and rulebook_B pages 66, 21, 42 Then the output at the end of the output
-                    should be Sources: rulebook_A Pages: 1,2,4 rulebook_B 21,42,66"""
-                },
-                {
-                    "role": "user",
-                    "content": str(contextList)+" "+query,
-                }
-            ],
+            messages,
             model="openai/gpt-oss-120b",
         )
         print(chat_completion)

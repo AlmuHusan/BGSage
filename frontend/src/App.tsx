@@ -76,15 +76,16 @@ async function apiDeleteSession(sid: number): Promise<void> {
     body: JSON.stringify({ sid }),
   });
 }
-async function apiAskBGSage(query: string, context: string[],sid:number): Promise<string> {
+async function apiAskBGSage(query: string, context: string[],messages:Message[],sid:number): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
+  let messageHistory=messages.slice(-5)
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query, context, sid}),
+    body: JSON.stringify({ query, context, messageHistory, sid}),
   });
   return res.json();
 }
@@ -288,8 +289,7 @@ export default function ChatApp() {
       if(filterDocuments && filterDocuments.length > 0 ){
         const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
         console.log(resVectorSearch);
-
-        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,activeSession!);
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,currentSession?.messages!,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage
         let lastSession=sessions
