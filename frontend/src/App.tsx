@@ -321,7 +321,7 @@ export default function ChatApp() {
     const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
     const newChat: Session = {
       id: newId,
-      name: `New Session ${newId}`,
+      name: `New Session`,
       last_message: 'Start a conversation...',
       time: 'Now',
       unread: 0,

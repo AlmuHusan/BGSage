@@ -44,7 +44,7 @@ def askBGSage():
         messages=[]
         for m in messageHistory:
             print(m)
-            messages.append({
+            messages.extend({
                 "role":m["chat_role"],
                 "content":m["content"]
             })
