@@ -48,7 +48,7 @@ def askBGSage():
                 "role":m["chat_role"],
                 "content":m["content"]
             })
-        messages.append(
+        messages.extend(
             {
                 "role": "system",
                 "content": """You are a board game expert with the task of helping people learn board games.
