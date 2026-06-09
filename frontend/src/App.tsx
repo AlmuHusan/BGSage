@@ -202,7 +202,7 @@ export default function ChatApp() {
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
-          ? { ...session, messages: [...session.messages, message], lastMessage, time: 'Just now' }
+          ? { ...session, messages: [...session.messages, message], last_message: lastMessage, time: 'Just now' }
           : session
       )
     );
@@ -292,15 +292,13 @@ export default function ChatApp() {
         const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,currentSession?.messages!,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage
-        console.log(sessions)
-        console.log(session)
-        session.last_message=resAskBGSage
       }
       else{
         systemMessage.time=currentTime()
         systemMessage.content="No Documents selected/uploaded"
       }
       addMessageToChat(activeSession, systemMessage, systemMessage.content);
+      
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -310,6 +308,7 @@ export default function ChatApp() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+      
     }
   }
 
