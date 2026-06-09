@@ -65,7 +65,7 @@ def askBGSage():
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         chat_completion = client.chat.completions.create(
             messages=messages,
-            model="openai/gpt-oss-120b",
+            model="llama-3.3-70b-versatile",
         )
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
         dbAPiBody["statement"] = statement
