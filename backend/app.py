@@ -75,7 +75,7 @@ def askBGSage():
         print(resX)
         print(messages)
         chat_completion = client.chat.completions.create(
-            messages,
+            messages=messages,
             model="openai/gpt-oss-120b",
         )
         print(chat_completion)
