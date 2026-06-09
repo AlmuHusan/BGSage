@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Session, Message } from '../types';
-
+import { useEffect, useRef } from 'react';
 interface ChatAreaProps {
   currentSession: Session | undefined;
   input: string;
@@ -38,6 +38,10 @@ export default function ChatArea({
   onShowLeftSidebar,
   onShowRightSidebar,
 }: ChatAreaProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+  bottomRef.current?.scrollIntoView();
+}, [currentSession?.messages]);
   if (!currentSession) {
     return (
       <div className="flex-1 flex items-center justify-center h-full text-muted-foreground">
@@ -133,6 +137,7 @@ export default function ChatArea({
                 </div>
               </div>
             ))}
+            <div ref={bottomRef} /> 
           </div>
         )}
       </ScrollArea>

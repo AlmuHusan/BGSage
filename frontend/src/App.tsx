@@ -76,15 +76,15 @@ async function apiDeleteSession(sid: number): Promise<void> {
     body: JSON.stringify({ sid }),
   });
 }
-async function apiAskBGSage(query: string, context: string[],sid:number): Promise<string> {
-  console.log(context)
+async function apiAskBGSage(query: string, context: string[],messages:Message[],sid:number): Promise<string> {
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
+  let messageHistory=messages.slice(-6)
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query, context, sid}),
+    body: JSON.stringify({ query, context, messageHistory, sid}),
   });
   return res.json();
 }
@@ -108,7 +108,6 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
 
 
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
-  console.log(filterDocuments)
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -162,13 +161,10 @@ export default function ChatApp() {
   async function retrieveSessions(): Promise<void> {
     try {
       let sessionRes = await apiFetchSessions();
-      console.log(sessionRes);
       let sessionResData:Session[]=sessionRes?.at(0) ?? [];
-      console.log(sessionResData)
       let sessionData : Session[]=[]
       for(let i =0;i<sessionResData.length;i++ ){
         let session:Session=sessionResData[i]
-        console.log(session)
         let lMessage=""
         if(session["messages"].length>0){
           lMessage=session["messages"].at(-1)!["content"]
@@ -181,7 +177,6 @@ export default function ChatApp() {
           unread: 0,
           messages: session["messages"],
         });
-        console.log(sessionData)
       }
 
       setSessions(sessionData);
@@ -201,7 +196,7 @@ export default function ChatApp() {
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
-          ? { ...session, messages: [...session.messages, message], lastMessage, time: 'Just now' }
+          ? { ...session, messages: [...session.messages, message], last_message: lastMessage, time: 'Just now' }
           : session
       )
     );
@@ -212,7 +207,6 @@ export default function ChatApp() {
   async function retrieveDocuments(): Promise<void> {
     try {
       const bookData = await apiFetchDocuments();
-      console.log(bookData);
       setDocuments(bookData.map((name, index) => ({ id: index + 1, name, selected: false })));
     } catch (err) {
       console.error('Failed to retrieve documents:', err);
@@ -280,29 +274,21 @@ export default function ChatApp() {
     };
     addMessageToChat(activeSession, userMessage, trimmed);
     setInput('');
-    console.log(trimmed);
 
     try {
       const filterDocuments = getFilterDocuments();
-      console.log('Filtering by documents:',filterDocuments);
       if(filterDocuments && filterDocuments.length > 0 ){
         const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
-        console.log(resVectorSearch);
-
-        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,activeSession!);
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,currentSession?.messages!,activeSession!);
         systemMessage.time=currentTime()
         systemMessage.content=resAskBGSage
-        let lastSession=sessions
-        console.log(sessions)
-        console.log(session)
-        session.last_message=resAskBGSage
-        setSessions(lastSession)
       }
       else{
         systemMessage.time=currentTime()
         systemMessage.content="No Documents selected/uploaded"
       }
       addMessageToChat(activeSession, systemMessage, systemMessage.content);
+      
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -312,6 +298,7 @@ export default function ChatApp() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+      
     }
   }
 
@@ -321,7 +308,7 @@ export default function ChatApp() {
     const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
     const newChat: Session = {
       id: newId,
-      name: `New Session ${newId}`,
+      name: `New Session`,
       last_message: 'Start a conversation...',
       time: 'Now',
       unread: 0,
