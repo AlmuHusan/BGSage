@@ -39,6 +39,7 @@ def askBGSage():
         query=request.json["query"]
         contextList=request.json["context"]
         messageHistory = request.json["messageHistory"]
+        print(messageHistory)
         sid=request.json["sid"]
         messages=[]
         for m in messageHistory:
