@@ -1,16 +1,16 @@
 export interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'system';
+  mid: number;
+  sid: number;
+  content: string;
+  chat_role: 'user' | 'system';
   time: string;
-  isVoice?: boolean;
-  isFile?: boolean;
+  is_file?: boolean;
 }
  
-export interface Chat {
+export interface Session {
   id: number;
   name: string;
-  lastMessage: string;
+  last_message: string;
   time: string;
   unread: number;
   messages: Message[];

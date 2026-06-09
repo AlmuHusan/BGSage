@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
-import type { Chat, Message, Document } from './components/types';
+import type { Session, Message, Document } from './components/types';
 import LeftSidebar from './components/ui/left-chats-sidebar';
 import RightSidebar from './components/ui/right-document-sidebar';
 import ChatArea from './components/ui/ChatArea';
 
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
 const API_BASE = 'https://bgsageapi.onrender.com';
 
 const API_HEADERS = {
@@ -22,11 +22,6 @@ function currentTime(): string {
   return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 async function extractPdfPages(file: File): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
@@ -44,13 +39,44 @@ async function extractPdfPages(file: File): Promise<string[]> {
 
 async function apiFetchDocuments(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/documents`, {
-    method: 'POST',
+    method: 'GET',
     headers: API_HEADERS
   });
   return res.json();
 }
 
-async function apiAskBGSage(query: string, context: string[]): Promise<string> {
+
+async function apiCreateSession(name:string): Promise<[]> {
+  const res = await fetch(`${API_BASE}/createSession`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({name}),
+  });
+  return res.json();
+}
+async function apiFetchSessions(): Promise<[]> {
+  const res = await fetch(`${API_BASE}/sessions`, {
+    method: 'GET',
+    headers: API_HEADERS
+  });
+  return res.json();
+}
+async function apiUpdateSession(name:string,sid:number): Promise<[]> {
+  const res = await fetch(`${API_BASE}/updateSessionName`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({name,sid}),
+  });
+  return res.json();
+}
+async function apiDeleteSession(sid: number): Promise<void> {
+  await fetch(`${API_BASE}/deleteSession`, {
+    method: 'POST',
+    headers: API_HEADERS,
+    body: JSON.stringify({ sid }),
+  });
+}
+async function apiAskBGSage(query: string, context: string[],sid:number): Promise<string> {
   console.log(context)
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
@@ -58,7 +84,7 @@ async function apiAskBGSage(query: string, context: string[]): Promise<string> {
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
-    body: JSON.stringify({ query, context }),
+    body: JSON.stringify({ query, context, sid}),
   });
   return res.json();
 }
@@ -79,7 +105,10 @@ async function apiDeleteDocument(documentName: string): Promise<void> {
   });
 }
 
+
+
 async function apiVectorSearch(queryString: string, filterDocuments?: string[]): Promise<string[]> {
+  console.log(filterDocuments)
   const res = await fetch(`${API_BASE}/vectorSearch`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -94,21 +123,10 @@ async function apiVectorSearch(queryString: string, filterDocuments?: string[]):
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatApp() {
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: 1,
-      name: 'Session 1',
-      lastMessage: '',
-      time: '10:32 AM',
-      unread: 0,
-      messages: [],
-    },
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([]);
 
-  const [activeChat, setActiveChat] = useState(1);
+  const [activeSession, setActiveSession] = useState<number | null>(null);
   const [input, setInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [leftSidebarExpanded, setLeftSidebarExpanded] = useState(true);
   const [rightSidebarExpanded, setRightSidebarExpanded] = useState(true);
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
@@ -117,8 +135,7 @@ export default function ChatApp() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentChat = chats.find((chat) => chat.id === activeChat);
+  const currentSession = sessions.find((s) => s.id === activeSession);
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -134,6 +151,7 @@ export default function ChatApp() {
     };
 
     retrieveDocuments();
+    retrieveSessions();
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -141,18 +159,50 @@ export default function ChatApp() {
 
   // ── Chat state helpers ───────────────────────────────────────────────────
 
-  function updateChat(chatId: number, updates: Partial<Chat>): void {
-    setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, ...updates } : chat))
+  async function retrieveSessions(): Promise<void> {
+    try {
+      let sessionRes = await apiFetchSessions();
+      console.log(sessionRes);
+      let sessionResData:Session[]=sessionRes?.at(0) ?? [];
+      console.log(sessionResData)
+      let sessionData : Session[]=[]
+      for(let i =0;i<sessionResData.length;i++ ){
+        let session:Session=sessionResData[i]
+        console.log(session)
+        let lMessage=""
+        if(session["messages"].length>0){
+          lMessage=session["messages"].at(-1)!["content"]
+        }
+        sessionData.push({
+          id: session["id"],
+          name: session["name"],
+          last_message: lMessage,
+          time: "",
+          unread: 0,
+          messages: session["messages"],
+        });
+        console.log(sessionData)
+      }
+
+      setSessions(sessionData);
+      if (sessionData.length > 0) setActiveSession(sessionData[0].id);
+    } catch (err) {
+      console.error('Failed to retrieve sessions:', err);
+    }
+  }
+
+  function updateChat(sessionId: number | null, updates: Partial<Session>): void {
+    setSessions((prev) =>
+      prev.map((chat) => (chat.id === sessionId ? { ...chat, ...updates } : chat))
     );
   }
 
-  function addMessageToChat(chatId: number, message: Message, lastMessage: string): void {
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, message], lastMessage, time: 'Just now' }
-          : chat
+  function addMessageToChat(sessionId: number | null, message: Message, lastMessage: string): void {
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === sessionId
+          ? { ...session, messages: [...session.messages, message], lastMessage, time: 'Just now' }
+          : session
       )
     );
   }
@@ -178,6 +228,19 @@ export default function ChatApp() {
     }
   }
 
+  async function deleteSession(session: Session): Promise<void> {
+    try {
+      await apiDeleteSession(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+      if (activeSession === session.id) {
+        const remaining = sessions.filter((s) => s.id !== session.id);
+        setActiveSession(remaining.length > 0 ? remaining[0].id : null);
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
+  }
+
   function toggleDocSelection(docId: number): void {
     setDocuments((prev) =>
       prev.map((doc) => (doc.id === docId ? { ...doc, selected: !doc.selected } : doc))
@@ -191,28 +254,31 @@ export default function ChatApp() {
 
     if (selectedDocs.length === 0) return [];
 
-    return selectedDocs.map((doc) => doc.name);
+    return selectedDocs.map((doc) => doc.name[0]);
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
 
   async function handleSend(): Promise<void> {
     const trimmed = input.trim();
-    if (!trimmed || !currentChat) return;
+    const session = sessions.find((s) => s.id === activeSession);
+    if (!trimmed || !session) return;
 
     const userMessage: Message = {
-      id: currentChat.messages.length + 1,
-      text: trimmed,
-      sender: 'user',
+      mid: session.messages.length + 1,
+      content: trimmed,
+      chat_role: 'user',
+      sid:activeSession!,
       time: currentTime(),
     };
     const systemMessage: Message = {
-          id: currentChat.messages.length + 2,
-          text: "",
-          sender: 'system',
-          time: currentTime(),
-        };
-    addMessageToChat(activeChat, userMessage, trimmed);
+      mid: session.messages.length + 2,
+      content: "",
+      chat_role: 'system',
+      sid:activeSession!,
+      time: currentTime(),
+    };
+    addMessageToChat(activeSession, userMessage, trimmed);
     setInput('');
     console.log(trimmed);
 
@@ -223,15 +289,20 @@ export default function ChatApp() {
         const resVectorSearch = await apiVectorSearch(trimmed, filterDocuments);
         console.log(resVectorSearch);
 
-        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch);
+        const resAskBGSage = await apiAskBGSage(trimmed, resVectorSearch,activeSession!);
         systemMessage.time=currentTime()
-        systemMessage.text=resAskBGSage
+        systemMessage.content=resAskBGSage
+        let lastSession=sessions
+        console.log(sessions)
+        console.log(session)
+        session.last_message=resAskBGSage
+        setSessions(lastSession)
       }
       else{
         systemMessage.time=currentTime()
-        systemMessage.text="No Documents selected/uploaded"
+        systemMessage.content="No Documents selected/uploaded"
       }
-      addMessageToChat(activeChat, systemMessage, systemMessage.text);
+      addMessageToChat(activeSession, systemMessage, systemMessage.content);
     } catch (err) {
       console.error('Failed to get response:', err);
     }
@@ -246,70 +317,44 @@ export default function ChatApp() {
 
   // ── Chat management ──────────────────────────────────────────────────────
 
-  function createNewChat(): void {
-    const newId = Math.max(...chats.map((c) => c.id)) + 1;
-    const newChat: Chat = {
+  async function createNewSession(): Promise<void>  {
+    const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
+    const newChat: Session = {
       id: newId,
-      name: `New Chat ${newId}`,
-      lastMessage: 'Start a conversation...',
+      name: `New Session ${newId}`,
+      last_message: 'Start a conversation...',
       time: 'Now',
       unread: 0,
       messages: [],
     };
-    setChats((prev) => [newChat, ...prev]);
-    setActiveChat(newId);
+    await apiCreateSession("New Session ${newId}")
+    setSessions((prev) => [newChat, ...prev]);
+    setActiveSession(newId);
   }
 
   function startEditingName(): void {
-    if (currentChat) {
-      setEditedName(currentChat.name);
+    if (currentSession) {
+      setEditedName(currentSession.name);
       setIsEditingName(true);
     }
   }
 
-  function saveChatName(): void {
-    if (editedName.trim() && currentChat) {
-      updateChat(activeChat, { name: editedName.trim() });
+  async function saveChatName(): Promise<void> {
+    if (editedName.trim()) {
+      updateChat(activeSession, { name: editedName.trim() });
       setIsEditingName(false);
+      await apiUpdateSession(editedName.trim(),activeSession!)
+      
     }
   }
 
-  // ── Recording ────────────────────────────────────────────────────────────
-
-  function startRecording(): void {
-    setIsRecording(true);
-    setRecordingDuration(0);
-    recordingIntervalRef.current = setInterval(() => {
-      setRecordingDuration((prev) => prev + 1);
-    }, 1000);
-  }
-
-  function stopRecording(): void {
-    if (!currentChat) return;
-
-    setIsRecording(false);
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-
-    const voiceMessage: Message = {
-      id: currentChat.messages.length + 1,
-      text: `🎤 Voice message (${formatDuration(recordingDuration)})`,
-      sender: 'user',
-      time: currentTime(),
-      isVoice: true,
-    };
-
-    addMessageToChat(activeChat, voiceMessage, '🎤 Voice message');
-    setRecordingDuration(0);
-  }
 
   // ── File upload ──────────────────────────────────────────────────────────
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
-    if (!file || !currentChat) return;
+    const session = sessions.find((s) => s.id === activeSession);
+    if (!file || !session) return;
 
     try {
       const pages = await extractPdfPages(file);
@@ -318,14 +363,15 @@ export default function ChatApp() {
       setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
 
       const fileMessage: Message = {
-        id: currentChat.messages.length + 1,
-        text: `📎 Uploaded ${file.name}`,
-        sender: 'user',
+        mid: session.messages.length + 1,
+        content: `📎 Uploaded ${file.name}`,
+        chat_role: 'user',
+        sid:session.id,
         time: currentTime(),
-        isFile: true,
+        is_file: true,
       };
 
-      addMessageToChat(activeChat, fileMessage, `📎 ${file.name}`);
+      addMessageToChat(activeSession, fileMessage, `📎 ${file.name}`);
     } catch (err) {
       console.error('File upload failed:', err);
     }
@@ -344,34 +390,31 @@ export default function ChatApp() {
       )}
 
       <LeftSidebar
-        chats={chats}
-        activeChat={activeChat}
+        sessions={sessions}
+        activeSession={activeSession}
         isExpanded={leftSidebarExpanded}
         isVisible={showLeftSidebar}
-        onSelectChat={(id) => { setActiveChat(id); setShowLeftSidebar(false); }}
-        onNewChat={createNewChat}
+        onSelectSession={(id) => { setActiveSession(id); setShowLeftSidebar(false); }}
+        onNewSession={createNewSession}
         onExpand={() => setLeftSidebarExpanded(true)}
         onCollapse={() => {
           setLeftSidebarExpanded(false);
           if (window.innerWidth < 768) setShowLeftSidebar(false);
         }}
+        onDeleteSession={deleteSession}
       />
 
       <ChatArea
-        currentChat={currentChat}
+        currentSession={currentSession}
         input={input}
-        isRecording={isRecording}
-        recordingDuration={recordingDuration}
         isEditingName={isEditingName}
         editedName={editedName}
         onInputChange={setInput}
         onSend={handleSend}
         onKeyPress={handleKeyPress}
-        onStartRecording={startRecording}
-        onStopRecording={stopRecording}
         onFileUpload={handleFileUpload}
         onStartEditingName={startEditingName}
-        onSaveChatName={saveChatName}
+        onSaveSessionName={saveChatName}
         onCancelEditingName={() => setIsEditingName(false)}
         onEditedNameChange={setEditedName}
         onShowLeftSidebar={() => setShowLeftSidebar(true)}

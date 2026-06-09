@@ -19,22 +19,36 @@ jobURL='https://'+url+'.cloud.databricks.com/api/2.2/jobs'
 wid=os.environ.get("databricksWID")
 apiKey=os.environ.get("databricksAPI")
 embJobKey=os.environ.get("databricksEmbJobID")
-
+dbAPiBody = {
+            "warehouse_id": wid,
+            "catalog": "bgsage",
+            "schema": "default",
+            "statement": ""
+        }
 app = Flask(__name__)
 CORS(app, origins=['*'])
 client = Groq(
     api_key=os.environ.get("llmAPIKey"),
 )
 
-#Ask the LLM a question
+
 @app.route('/askBGSage', methods=['POST'])
 def askBGSage():
     try:
         print(request.json)
         query=request.json["query"]
         contextList=request.json["context"]
+        sid=request.json["sid"]
+
         print(str(contextList))
         print("DING")
+
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (\"user\",\"{}\",{})".format( query, sid)
+        print(statement)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         chat_completion = client.chat.completions.create(
 
             messages=[
@@ -52,44 +66,181 @@ def askBGSage():
                     "content": str(contextList)+" "+query,
                 }
             ],
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
         )
         print(chat_completion)
+        statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
+        print(statement)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         return jsonify(chat_completion.choices[0].message.content) , 200
     except Exception as e:
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Get a list of all books uploaded
-@app.route('/documents', methods=['POST'])
-def get_documents():
+
+@app.route('/documents', methods=['GET'])
+def getDocuments():
     try:
-        data = index.search(
-            namespace="__default__",
-            query={
-                "inputs": {"text": "the"},
-                "top_k": 1000
-            }
-        )
-        # print(data["result"]["hits"])
-        resX = data["result"]["hits"]
+        statement = "SELECT name from documents where uid = 1"
+        print(statement)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
         print(resX)
-        bookList=[]
-        for r in resX:
-            bookList.append(r["fields"]["source"])
-        bookList=list(set(bookList))
-        return jsonify(bookList) , 200
+        return jsonify(resX['result']["data_array"]), 200
     except Exception as e:
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-# Insert data from a new book
+@app.route('/deleteDocument', methods=['POST'])
+def deleteDocument():
+    try:
+        print(request.json)
+        index.delete(
+            filter={
+                "source": {"$eq": request.json["document"][0]}
+            },
+            namespace="__default__"
+        )
+        statement = "DELETE from documents WHERE name = \"{}\" AND uid=1".format(request.json["document"][0])
+        print(statement)
+        dbAPiBody["statement"] = statement
+        sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        sessionRes = json.loads(sessionRes.text)
+        print(sessionRes)
+        return jsonify("Document deleted!") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/sessions', methods=['GET'])
+def getSessions():
+    try:
+        sessionCollection=[]
+        statement = "SELECT sid,name from sessions where uid = 1"
+        print(statement)
+        dbAPiBody["statement"]=statement
+        sessionRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        sessionRes = json.loads(sessionRes.text)
+        print(sessionRes)
+        for s in sessionRes['result']["data_array"]:
+            print("S")
+            print(s)
+            statement = "SELECT (mid,chat_role,content) from messages WHERE sid={} ORDER BY mid".format(s[0])
+            print(statement)
+            dbAPiBody["statement"] = statement
+            messageRes = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+            messageRes = json.loads(messageRes.text)
+            print(messageRes['result'])
+            messageData=[]
+            if(messageRes['result']!= {}):
+                for m in messageRes['result']["data_array"]:
+                    print(m)
+                    messageData.append(json.loads(m[0]))
+                sessionCollection.append({
+                    "id": int(s[0]),
+                    "name": s[1],
+                    "messages":messageData
+                })
+            else:
+                sessionCollection.append({
+                    "id": int(s[0]),
+                    "name": s[1],
+                    "messages": []
+                })
+        print(sessionCollection)
+        return jsonify(sessionCollection , 200)
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify(sessionCollection),500
+
+@app.route('/createSession', methods=['POST'])
+def createSession():
+    try:
+        print(request.json)
+        name=request.json["name"]
+        statement="INSERT into sessions (uid,name) VALUES (1,\"{}\")".format(name)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/updateSessionName', methods=['POST'])
+def updateSessionName():
+    try:
+        print(request.json)
+        name=request.json["name"]
+        sid = request.json["sid"]
+        statement="UPDATE sessions SET name =\"{}\" WHERE sid = {}".format(name,sid)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/deleteSession', methods=['POST'])
+def deleteSession():
+    try:
+        print(request.json)
+        sid = request.json["sid"]
+        statement="DELETE from sessions WHERE sid = {}".format(sid)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        statement = "DELETE from messages WHERE sid = {}".format(sid)
+        dbAPiBody["statement"] = statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+        return jsonify("Delete Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+@app.route('/updateSession', methods=['POST'])
+def updateSession():
+    try:
+        print(request.json)
+        role=request.json["role"]
+        content=request.json["content"]
+        sid = request.json["sid"]
+        statement="INSERT into messages (chat_role,content,sid) VALUES (\"{}\",{},\"{}\")".format(role,content,sid)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
+
+        return jsonify("Upload Successfull") , 200
+    except Exception as e:
+        print("Failed")
+        print(e)
+        return jsonify("Internal Server Error"),500
+
 @app.route('/insertDocument', methods=['POST'])
 def insertDocument():
     try:
         print(request.json)
         pages=request.json["pages"]
         print("DING")
+        statement="INSERT into documents (name,uid) VALUES (\"{}\",{})".format(request.json["document"],1)
+        dbAPiBody["statement"]=statement
+        x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resX = json.loads(x.text)
+        print(resX)
         data = []
         id=index.describe_namespace(namespace='__default__')
         print(id)
@@ -108,22 +259,8 @@ def insertDocument():
         print("Failed")
         print(e)
         return jsonify("Internal Server Error"),500
-@app.route('/deleteDocument', methods=['POST'])
-def deleteDocument():
-    try:
-        print(request.json)
-        index.delete(
-            filter={
-                "source": {"$eq": request.json["document"]}
-            },
-            namespace="__default__"
-        )
-        return jsonify("Document deleted!") , 200
-    except Exception as e:
-        print("Failed")
-        print(e)
-        return jsonify("Internal Server Error"),500
-# Search for relevant passages
+
+
 @app.route('/vectorSearch', methods=['POST'])
 async def vectorSearch():
     try:
@@ -136,7 +273,6 @@ async def vectorSearch():
                 "filter":{"source":{"$in":request.json["filterDocuments"]}}
             }
         )
-        # print(data["result"]["hits"])
         resX = data["result"]["hits"]
         print(resX)
         results = []

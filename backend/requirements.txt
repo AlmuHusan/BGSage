@@ -4,4 +4,4 @@ Gunicorn
 requests
 groq
 aiohttp
-pinecone
+pinecone==8.1.2
