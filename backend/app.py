@@ -52,7 +52,8 @@ def askBGSage():
                              Provide a clear answer in a readable clear format and place the sources and page numbers of where you are getting your information
                             from at the end of your statement in order of page number. For example if your sources are
                             rulebook_A pages 4,1,2 and rulebook_B pages 66, 21, 42 Then the output at the end of the output
-                            should be Sources: rulebook_A Pages: 1,2,4 rulebook_B 21,42,66"""
+                            should be Sources: rulebook_A Pages: 1,2,4 rulebook_B 21,42,66. Your sources should only be
+                            from the documents provided."""
             },
             {
                 "role": "user",
@@ -66,6 +67,7 @@ def askBGSage():
         chat_completion = client.chat.completions.create(
             messages=messages,
             model="llama-3.3-70b-versatile",
+            temperature=0
         )
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
         dbAPiBody["statement"] = statement
