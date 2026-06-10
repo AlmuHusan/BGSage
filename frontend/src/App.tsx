@@ -347,7 +347,7 @@ export default function ChatApp() {
       const pages = await extractPdfPages(file);
       await apiInsertDocument(file.name, pages);
 
-      setDocuments((docs) => [{ id: docs[-1].id + 1, name: file.name, selected: false }, ...docs]);
+      setDocuments((docs) => [{ id: docs[docs.length-1].id + 1, name: file.name, selected: false }, ...docs]);
 
       const fileMessage: Message = {
         mid: session.messages.length + 1,
