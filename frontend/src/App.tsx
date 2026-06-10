@@ -89,7 +89,7 @@ async function apiAskBGSage(query: string, context: string[],messages:Message[],
   return res.json();
 }
 
-async function apiInsertBook(documentName: string, pages: string[]): Promise<void> {
+async function apiInsertDocument(documentName: string, pages: string[]): Promise<void> {
   await fetch(`${API_BASE}/insertDocument`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -345,9 +345,9 @@ export default function ChatApp() {
 
     try {
       const pages = await extractPdfPages(file);
-      await apiInsertBook(file.name, pages);
+      await apiInsertDocument(file.name, pages);
 
-      setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
+      setDocuments((docs) => [{ id: docs[-1].id + 1, name: file.name, selected: false }, ...docs]);
 
       const fileMessage: Message = {
         mid: session.messages.length + 1,
