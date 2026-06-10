@@ -51,7 +51,8 @@ def askBGSage():
                             You will be provided a collection of context that is based on the board game rules the user is playing.
                              Provide a clear answer in a readable clear format and place the sources and page numbers of
                               where you are getting your information from at the end of your statement in order of page number
-                              in the format Sources: rulebookName Pages: 1,2,3.
+                              in the format Sources: rulebookName1 Pages: 1,2,3 rulebookName2 Pages: 82,99
+                              rulebookName3 Pages: 5,7
                               Your sources should only be from the documents provided."""
             },
             {
