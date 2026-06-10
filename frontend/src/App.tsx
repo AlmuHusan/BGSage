@@ -80,7 +80,14 @@ async function apiAskBGSage(query: string, context: string[],messages:Message[],
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
-  let messageHistory=messages.slice(-6)
+  let messageHistory:Message[]=messages.slice(-6)
+  messageHistory = messageHistory.map((m: Message) => {
+    const idx = m.content.indexOf('Sources:');
+    return {
+      ...m,
+      content: idx !== -1 ? m.content.substring(0, idx) : m.content,
+    };
+  });
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -89,7 +96,7 @@ async function apiAskBGSage(query: string, context: string[],messages:Message[],
   return res.json();
 }
 
-async function apiInsertBook(documentName: string, pages: string[]): Promise<void> {
+async function apiInsertDocument(documentName: string, pages: string[]): Promise<void> {
   await fetch(`${API_BASE}/insertDocument`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -345,9 +352,9 @@ export default function ChatApp() {
 
     try {
       const pages = await extractPdfPages(file);
-      await apiInsertBook(file.name, pages);
+      await apiInsertDocument(file.name, pages);
 
-      setDocuments((prev) => [{ id: prev.length + 1, name: file.name, selected: false }, ...prev]);
+      setDocuments((docs) => [{ id: docs[docs.length-1].id + 1, name: file.name, selected: false }, ...docs]);
 
       const fileMessage: Message = {
         mid: session.messages.length + 1,
