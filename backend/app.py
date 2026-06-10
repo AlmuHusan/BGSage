@@ -66,7 +66,6 @@ def askBGSage():
         chat_completion = client.chat.completions.create(
             messages=messages,
             model="llama-3.3-70b-versatile",
-            temperature=0
         )
         statement = "INSERT into messages (chat_role,content,sid) VALUES (\"assistant\",\"{}\",{})".format(chat_completion.choices[0].message.content, sid)
         dbAPiBody["statement"] = statement
