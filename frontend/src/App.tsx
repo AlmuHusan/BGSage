@@ -80,7 +80,14 @@ async function apiAskBGSage(query: string, context: string[],messages:Message[],
   if (context as unknown=="Internal Server Error"){
     return "Internal Server Error";
   }
-  let messageHistory=messages.slice(-6)
+  let messageHistory:Message[]=messages.slice(-6)
+  messageHistory = messageHistory.map((m: Message) => {
+    const idx = m.content.indexOf('Sources:');
+    return {
+      ...m,
+      content: idx !== -1 ? m.content.substring(0, idx) : m.content,
+    };
+  });
   const res = await fetch(`${API_BASE}/askBGSage`, {
     method: 'POST',
     headers: API_HEADERS,
