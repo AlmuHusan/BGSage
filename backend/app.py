@@ -71,7 +71,7 @@ def askBGSage():
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         #resX = json.loads(x.text)
-        return jsonify(chat_completion.choices[0].message.content) , 200
+        return jsonify(chat_completion.choices[0].message.content.replace("*","")) , 200
     except Exception as e:
         print("Failed")
         print(e)
