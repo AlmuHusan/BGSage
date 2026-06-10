@@ -80,7 +80,6 @@ def askBGSage():
 @app.route('/documents', methods=['GET'])
 def getDocuments():
     try:
-        print(request.json)
         statement = "SELECT name from documents where uid = 1"
         dbAPiBody["statement"] = statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
@@ -112,7 +111,6 @@ def deleteDocument():
 @app.route('/sessions', methods=['GET'])
 def getSessions():
     try:
-        print(request.json)
         sessionCollection=[]
         statement = "SELECT sid,name from sessions where uid = 1"
         dbAPiBody["statement"]=statement
