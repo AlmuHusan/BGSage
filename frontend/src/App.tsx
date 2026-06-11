@@ -314,7 +314,6 @@ export default function ChatApp() {
   async function createNewSession(): Promise<void>  {
     try{
       let resSession=await apiCreateSession("New Session")
-      console.log(resSession)
       const newChat: Session = {
         id: resSession[1],
         name: `New Session`,
