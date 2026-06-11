@@ -158,7 +158,7 @@ def createSession():
         resY = json.loads(y.text)
         print(resY['result']["data_array"][0])
         print(resY)
-        return jsonify("Upload Successfull") , 200
+        return jsonify("Upload Successfull",int(resY['result']["data_array"][0][0])) , 200
     except Exception as e:
         print("Failed")
         print(e)
