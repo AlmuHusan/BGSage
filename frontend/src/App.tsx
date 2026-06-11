@@ -46,7 +46,7 @@ async function apiFetchDocuments(): Promise<string[]> {
 }
 
 
-async function apiCreateSession(name:string): Promise<[]> {
+async function apiCreateSession(name:string): Promise<[String,number]> {
   const res = await fetch(`${API_BASE}/createSession`, {
     method: 'POST',
     headers: API_HEADERS,
@@ -312,19 +312,22 @@ export default function ChatApp() {
   // ── Chat management ──────────────────────────────────────────────────────
 
   async function createNewSession(): Promise<void>  {
-    const newId = sessions.length > 0 ? Math.max(...sessions.map((c) => c.id)) + 1 : 1;
-    const newChat: Session = {
-      id: newId,
-      name: `New Session`,
-      last_message: 'Start a conversation...',
-      time: 'Now',
-      unread: 0,
-      messages: [],
-    };
-    let resSession=await apiCreateSession("New Session")
-    console.log(resSession)
-    setSessions((prev) => [newChat, ...prev]);
-    setActiveSession(newId);
+    try{
+      let resSession=await apiCreateSession("New Session")
+      console.log(resSession)
+      const newChat: Session = {
+        id: resSession[1],
+        name: `New Session`,
+        last_message: 'Start a conversation...',
+        time: 'Now',
+        unread: 0,
+        messages: [],
+      };
+      setSessions((prev) => [newChat, ...prev]);
+      setActiveSession(resSession[1]);
+    } catch (err) {
+      console.error('Failed to create Session:', err);
+    }
   }
 
   function startEditingName(): void {
