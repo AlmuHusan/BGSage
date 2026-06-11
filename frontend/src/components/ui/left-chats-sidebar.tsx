@@ -85,7 +85,6 @@ export default function LeftSidebar({
                 >
                   <X size={13} />
                 </Button>
-                {/* Delete button — always visible, outside text block */}
                 
               </div>
             ) : (

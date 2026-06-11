@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, request
-import os
 from flask_cors import CORS
 from groq import Groq
 import requests
@@ -148,11 +147,14 @@ def createSession():
     try:
         print(request.json)
         name=request.json["name"]
-        statement="INSERT into sessions (uid,name) VALUES (1,\"{}\")".format(name)
+        statement="INSERT into sessions (uid,name,created_at) VALUES (1,\"{}\",CURRENT_TIMESTAMP())".format(name)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
-        return jsonify("Upload Successfull") , 200
+        statement2 = "Select sid FROM sessions WHERE name=\"{}\"ORDER BY created_at DESC LIMIT 1".format(name)
+        dbAPiBody["statement"] = statement2
+        y = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
+        resY = json.loads(y.text)
+        return jsonify("Upload Successfull",int(resY['result']["data_array"][0][0])) , 200
     except Exception as e:
         print("Failed")
         print(e)
@@ -211,7 +213,7 @@ def insertDocument():
         statement="INSERT into documents (name,uid) VALUES (\"{}\",{})".format(request.json["document"],1)
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
-        resX = json.loads(x.text)
+        #resX = json.loads(x.text)
         data = []
         id=index.describe_namespace(namespace='__default__')
         id=int(id["record_count"])+101
