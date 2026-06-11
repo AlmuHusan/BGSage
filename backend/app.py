@@ -152,6 +152,7 @@ def createSession():
         dbAPiBody["statement"]=statement
         x = requests.post(url, json=dbAPiBody, headers={"Authorization": "Bearer " + apiKey})
         resX = json.loads(x.text)
+        print(resX)
         return jsonify("Upload Successfull") , 200
     except Exception as e:
         print("Failed")

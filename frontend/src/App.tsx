@@ -321,7 +321,7 @@ export default function ChatApp() {
       unread: 0,
       messages: [],
     };
-    await apiCreateSession("New Session ${newId}")
+    await apiCreateSession("New Session")
     setSessions((prev) => [newChat, ...prev]);
     setActiveSession(newId);
   }
