@@ -1,6 +1,7 @@
-# BGSage 🎲
+# BGSage
  
-BGSage is an AI-powered board game companion that teaches you the rules of any board game through natural conversation. Upload your game's rulebook and ask questions in plain English — BGSage reads and understands the rules so you don't have to.
+BGSage is an AI-powered board game companion that teaches you the rules of any board game through natural conversation. Upload your game's rulebook and ask questions right away! 
+BGSage reads and understands the rules so you don't have to.
 
 ## What It Does
  
